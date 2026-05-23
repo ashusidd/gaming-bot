@@ -1,8 +1,9 @@
 name: Gaming Bot Auto Post
 on:
   schedule:
-    - cron: '0 10 * * *'  # Dopahar 3:30 PM (IST)
-    - cron: '0 16 * * *'  # Raat 9:30 PM (IST)
+    - cron: '0 8 * * *'   # 1:30 PM IST
+    - cron: '0 13 * * *'  # 6:30 PM IST
+    - cron: '0 17 * * *'  # 10:30 PM IST
   workflow_dispatch:
 
 jobs:
