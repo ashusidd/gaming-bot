@@ -17,8 +17,9 @@ jobs:
         with:
           python-version: '3.10'
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests google-generativeai
       - name: Run Bot
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python final_bot.py
