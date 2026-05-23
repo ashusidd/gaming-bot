@@ -16,8 +16,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - name: Install dependencies
-        run: pip install requests google-generativeai
+            - name: Install dependencies
+        run: pip install requests google-generativeai==0.3.1
+
       - name: Run Bot
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
