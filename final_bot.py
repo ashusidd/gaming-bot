@@ -1,26 +1,34 @@
 import requests
 import os
+import google.generativeai as genai
 
-def test_system():
-    # GitHub Secrets se token uthana
-    t = os.environ.get('FB_TOKEN')
-    
-    # URL (Isme koi galti nahi ho sakti ab)
-    u = "https://facebook.com"
-    p = {'access_token': t, 'fields': 'name,id'}
-    
+def get_ai_content():
     try:
-        r = requests.get(u, params=p)
-        # Agar Facebook ne kuch bheja hai toh print hoga, warna error message aayega
-        if r.status_code == 200:
-            print("✅ SUCCESS! Facebook connect ho gaya.")
-            print("Aapka Naam:", r.json().get('name'))
-        else:
-            print(f"❌ FACEBOOK ERROR: Status Code {r.status_code}")
-            print("Detail:", r.text)
-            
+        # Gemini API setup
+        genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = "Write a short, viral gaming news post about FREEFIRE, BGMI or GTA 6 in hinglish for Facebook."
+        response = model.generate_content(prompt)
+        return response.text
     except Exception as e:
-        print(f"⚠️ SCRIPT ERROR: {e}")
+        return "🎮 Gaming Mode ON! 🔥 #Gaming #ErAshuGaming"
+
+def post_to_facebook():
+    # URL EKDUM FIXED HAI - KOI BRACKET NAHI HAI
+    url = "https://facebook.com"
+    
+    token = os.environ.get('FB_TOKEN')
+    message = get_ai_content()
+    
+    # Data ko alag se bhej rahe hain
+    payload = {
+        'message': message,
+        'access_token': token
+    }
+    
+    # Request bhej rahe hain
+    r = requests.post(url, data=payload)
+    print("Facebook Response:", r.json())
 
 if __name__ == "__main__":
-    test_system()
+    post_to_facebook()
