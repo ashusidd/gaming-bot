@@ -1,20 +1,19 @@
 import requests
 import os
 
-PAGE_ID = '318640404662743'
-FB_TOKEN = os.environ.get('FB_TOKEN')
-
 def post_to_facebook():
-    # Is URL ko dhyan se dekho, isme galti ki gunjayish nahi hai
-    url = f"https://facebook.com{PAGE_ID}/feed"
+    # IS LINE KO DHAYAN SE DEKHO - ISME SLASH (/) HAI
+    url = "https://facebook.com"
     
-    payload = {
-        'message': "🎮 Gaming Mode ON! 🔥 #Gaming #ErAshuGaming",
-        'access_token': FB_TOKEN
+    token = os.environ.get('FB_TOKEN')
+    
+    data = {
+        'message': '🎮 Gaming Mode ON! 🔥 #Gaming #ErAshuGaming',
+        'access_token': token
     }
     
-    response = requests.post(url, data=payload)
-    print(response.json())
+    r = requests.post(url, data=data)
+    print(r.json())
 
 if __name__ == "__main__":
     post_to_facebook()
