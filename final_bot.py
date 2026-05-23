@@ -2,18 +2,23 @@ import requests
 import os
 
 def post_to_facebook():
-    # IS LINE KO DHAYAN SE DEKHO - ISME SLASH (/) HAI
     url = "https://facebook.com"
-    
     token = os.environ.get('FB_TOKEN')
     
+    if not token:
+        print("❌ Token nahi mila! Settings check karein.")
+        return
+
     data = {
-        'message': '🎮 Gaming Mode ON! 🔥 #Gaming #ErAshuGaming',
+        'message': '🎮 Testing Autopilot! 🔥 #Gaming #ErAshuGaming',
         'access_token': token
     }
     
-    r = requests.post(url, data=data)
-    print(r.json())
+    response = requests.post(url, data=data)
+    
+    # Isse humein asli wajah pata chalegi
+    print(f"Status: {response.status_code}")
+    print(f"Response: {response.text}")
 
 if __name__ == "__main__":
     post_to_facebook()
