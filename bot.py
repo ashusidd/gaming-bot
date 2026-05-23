@@ -1,7 +1,6 @@
 import requests
 import os
 
-# Ye details hum GitHub ki settings mein safe rakhenge
 PAGE_ID = '318640404662743'
 ACCESS_TOKEN = os.environ.get('FB_TOKEN')
 
