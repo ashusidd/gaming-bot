@@ -1,0 +1,22 @@
+name: Gaming Bot Auto Post
+on:
+  schedule:
+    - cron: '0 10 * * *' # Roz dopahar 3:30 PM (IST) par chalega
+  workflow_dispatch: # Manual button ke liye
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Run Bot
+        env:
+          FB_TOKEN: ${{ secrets.FB_TOKEN }}
+        run: python bot.py
