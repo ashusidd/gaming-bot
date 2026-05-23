@@ -1,23 +1,19 @@
 import requests
 import os
 
-# Details
 PAGE_ID = '318640404662743'
 ACCESS_TOKEN = os.environ.get('FB_TOKEN')
 
 def post_to_facebook():
-    # Is URL ko dhyan se dekho, isme maine koi variable use nahi kiya taaki galti na ho
-    url = "https://facebook.com"
+    url = f"https://facebook.com{PAGE_ID}/feed"
+    message = "🎮 Testing Autopilot Mode! 🔥 #Gaming #ErAshuGaming"
+    payload = {'message': message, 'access_token': ACCESS_TOKEN}
     
-    message = "🎮 Daily Gaming Update: Stay tuned for epic highlights! 🔥 #Gaming #ErAshuGaming"
+    response = requests.post(url, data=payload)
     
-    payload = {
-        'message': message,
-        'access_token': ACCESS_TOKEN
-    }
-    
-    r = requests.post(url, data=payload)
-    print(r.json())
+    # Isse humein asli wajah pata chalegi
+    print(f"Status Code: {response.status_code}")
+    print(f"Full Response: {response.text}")
 
 if __name__ == "__main__":
     post_to_facebook()
