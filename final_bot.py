@@ -3,16 +3,29 @@ import os
 import google.generativeai as genai
 
 def get_ai_content():
-    genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
-    model = genai.GenerativeModel('gemini-pro')
-    prompt = "Write a short, engaging gaming news post for a Facebook page (80k followers). Topic: Trending Games (GTA 6, BGMI, etc). Use emojis and hashtags."
-    response = model.generate_content(prompt)
-    return response.text
+    # Gemini Setup
+    api_key = os.environ.get('GEMINI_API_KEY')
+    genai.configure(api_key=api_key)
+    
+    model = genai.GenerativeModel('gemini-1.5-flash') # Naya aur fast model
+    
+    prompt = "Write a very short, viral gaming news post (GTA 6 or BGMI) for a Facebook page with emojis and hashtags. Keep it engaging."
+    
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"🎮 Gaming Mode ON! 🔥 Stay tuned for epic updates. #Gaming #Viral"
 
 def post_to_facebook():
+    page_id = '318640404662743'
+    token = os.environ.get('FB_TOKEN')
+    
     message = get_ai_content()
-    url = f"https://facebook.com"
-    payload = {'message': message, 'access_token': os.environ.get('FB_TOKEN')}
+    
+    url = f"https://facebook.com{page_id}/feed"
+    payload = {'message': message, 'access_token': token}
+    
     r = requests.post(url, data=payload)
     print(r.json())
 
