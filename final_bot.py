@@ -1,31 +1,26 @@
 import requests
 import os
 
-def check_access():
-    # Token uthana
+def test_system():
+    # GitHub Secrets se token uthana
     t = os.environ.get('FB_TOKEN')
     
-    # Simple URL - isme galti ka koi chance nahi
+    # URL (Isme koi galti nahi ho sakti ab)
     u = "https://facebook.com"
-    
-    # Token ko params mein daal rahe hain taaki URL saaf rahe
-    p = {'access_token': t}
+    p = {'access_token': t, 'fields': 'name,id'}
     
     try:
         r = requests.get(u, params=p)
-        d = r.json()
-        
-        print("--- RESULT ---")
-        if 'data' in d:
-            for page in d['data']:
-                print(f"NAME: {page['name']}")
-                print(f"TOKEN: {page['access_token']}")
-                print("-" * 20)
+        # Agar Facebook ne kuch bheja hai toh print hoga, warna error message aayega
+        if r.status_code == 200:
+            print("✅ SUCCESS! Facebook connect ho gaya.")
+            print("Aapka Naam:", r.json().get('name'))
         else:
-            print("Nahi mila! Response ye aaya hai:", d)
+            print(f"❌ FACEBOOK ERROR: Status Code {r.status_code}")
+            print("Detail:", r.text)
             
     except Exception as e:
-        print("Error:", e)
+        print(f"⚠️ SCRIPT ERROR: {e}")
 
 if __name__ == "__main__":
-    check_access()
+    test_system()
