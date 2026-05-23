@@ -2,18 +2,30 @@ import requests
 import os
 
 def check_access():
-    # Jo token abhi aapke paas hai (User Token), wahi rehne dein GitHub mein
-    token = os.environ.get('FB_TOKEN')
+    # Token uthana
+    t = os.environ.get('FB_TOKEN')
     
-    # Ye command aapke saare Pages ki list aur unke "Page Tokens" nikaal degi
-    url = f"https://facebook.com{token}"
+    # Simple URL - isme galti ka koi chance nahi
+    u = "https://facebook.com"
     
-    r = requests.get(url)
-    data = r.json()
+    # Token ko params mein daal rahe hain taaki URL saaf rahe
+    p = {'access_token': t}
     
-    print("--- AAPKE PAGES KI LIST ---")
-    print(data)
-    print("---------------------------")
+    try:
+        r = requests.get(u, params=p)
+        d = r.json()
+        
+        print("--- RESULT ---")
+        if 'data' in d:
+            for page in d['data']:
+                print(f"NAME: {page['name']}")
+                print(f"TOKEN: {page['access_token']}")
+                print("-" * 20)
+        else:
+            print("Nahi mila! Response ye aaya hai:", d)
+            
+    except Exception as e:
+        print("Error:", e)
 
 if __name__ == "__main__":
     check_access()
