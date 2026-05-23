@@ -26,8 +26,8 @@ def get_ai_content():
 
 def post_to_facebook():
     page_id = '318640404662743'
-    # API URL jiske zariye post hogi
-    url = f"https://facebook.com{page_id}/feed"
+    # API URL jiske zariye post hogi (ERROR FIXED HERE)
+    url = f"https://graph.facebook.com/{page_id}/feed"
     
     token = os.environ.get('FB_TOKEN')
     message = get_ai_content()
