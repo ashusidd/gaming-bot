@@ -26,13 +26,28 @@ def get_ai_content():
 
 def post_to_facebook():
     page_id = '318640404662743'
-    # API URL jiske zariye post hogi (ERROR FIXED HERE)
-    url = f"https://graph.facebook.com/{page_id}/feed"
+    system_token = os.environ.get('FB_TOKEN')
     
-    token = os.environ.get('FB_TOKEN')
+    # ---------------------------------------------------------
+    # NEW MAGIC STEP: System Token ko Page Token mein convert karna
+    # ---------------------------------------------------------
+    token_url = f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}"
+    token_response = requests.get(token_url).json()
+    
+    if 'access_token' in token_response:
+        page_token = token_response['access_token']
+        print("Success: Page Access Token mil gaya!")
+    else:
+        print(f"Token Error: {token_response}")
+        return
+    # ---------------------------------------------------------
+    
+    # API URL jiske zariye post hogi
+    url = f"https://graph.facebook.com/{page_id}/feed"
     message = get_ai_content()
     
-    payload = {'message': message, 'access_token': token}
+    # Ab hum yahan naya 'page_token' bhej rahe hain
+    payload = {'message': message, 'access_token': page_token}
     
     r = requests.post(url, data=payload)
     print(f"Facebook Response: {r.json()}")
