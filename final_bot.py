@@ -1,34 +1,27 @@
 import requests
 import os
-import google.generativeai as genai
+from google import genai
 
 def get_ai_content():
     try:
-        # Gemini API setup
-        genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = "Write a short, viral gaming news post about FREEFIRE, BGMI or GTA 6 in hinglish for Facebook."
-        response = model.generate_content(prompt)
+        api_key = os.environ.get('GEMINI_API_KEY')
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents="Write a short viral gaming news post (freefire, bgmi, gta6) for Facebook with emojis and hashtags in hinglish."
+        )
         return response.text
     except Exception as e:
-        return "🎮 Gaming Mode ON! 🔥 #Gaming #ErAshuGaming"
+        return "🎮 Gaming Mode ON! 🔥 Stay tuned for epic updates. #Gaming #ErAshuGaming"
 
 def post_to_facebook():
-    # URL EKDUM FIXED HAI - KOI BRACKET NAHI HAI
     url = "https://facebook.com"
-    
     token = os.environ.get('FB_TOKEN')
     message = get_ai_content()
     
-    # Data ko alag se bhej rahe hain
-    payload = {
-        'message': message,
-        'access_token': token
-    }
-    
-    # Request bhej rahe hain
+    payload = {'message': message, 'access_token': token}
     r = requests.post(url, data=payload)
-    print("Facebook Response:", r.json())
+    print("Facebook Response:", r.text)
 
 if __name__ == "__main__":
     post_to_facebook()
