@@ -1,9 +1,11 @@
 name: Gaming Bot Auto Post
 on:
   schedule:
-    - cron: '0 8 * * *'   # 1:30 PM IST
-    - cron: '0 13 * * *'  # 6:30 PM IST
-    - cron: '0 17 * * *'  # 10:30 PM IST
+    - cron: '0 4 * * *'   # 1. Subah 09:30 AM IST
+    - cron: '0 8 * * *'   # 2. Dopehar 01:30 PM IST
+    - cron: '0 11 * * *'  # 3. Shaam 04:30 PM IST
+    - cron: '0 13 * * *'  # 4. Shaam 06:30 PM IST
+    - cron: '0 17 * * *'  # 5. Raat 10:30 PM IST
   workflow_dispatch:
 
 jobs:
@@ -19,7 +21,6 @@ jobs:
         with:
           python-version: '3.10'
 
-      # YAHAN FIX HUA HAI: requests ke sath Pillow bhi install hoga
       - name: Install dependencies
         run: pip install requests Pillow
 
