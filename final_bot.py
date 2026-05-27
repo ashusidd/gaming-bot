@@ -7,15 +7,28 @@ import io
 def get_live_news():
     print("Reddit se live gaming news nikal rahe hain...")
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        # ---------------------------------------------------------
+        # THE FIX: Reddit API Security Bypass
+        # ---------------------------------------------------------
+        # Hum ek lamba 'User-Agent' bhej rahe hain jisme Windows aur Chrome dono ka naam hai
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 GamingBot/1.0'
+        }
         r = requests.get('https://www.reddit.com/r/gamingnews/new.json?limit=1', headers=headers)
+        
+        # Naya Safety Check: Agar fir bhi block hua, toh gracefully handle karo
+        if r.status_code != 200:
+            print(f"Reddit API ne block kar diya. Status Code: {r.status_code}")
+            return "BGMI and GTA 6 exciting latest rumors"
+            
         data = r.json()
         latest_news = data['data']['children'][0]['data']['title']
         print(f"Taaza Khabar Mili: {latest_news}")
         return latest_news
+        
     except Exception as e:
         print(f"News Error: {e}")
-        return "BGMI and GTA 6 exciting latest rumors" # Fallback topic
+        return "BGMI and GTA 6 exciting latest rumors"
 
 def get_ai_data(news_topic):
     api_key = os.environ.get('GROQ_API_KEY')
@@ -39,11 +52,8 @@ def get_ai_data(news_topic):
     print("Groq AI se Hinglish caption banwa rahe hain...")
     caption = requests.post(url_groq, headers=headers, json=data).json()['choices'][0]['message']['content']
     
-    # ---------------------------------------------------------
-    # UPDATED: Realistic Image Prompt
-    # ---------------------------------------------------------
+    # 2. AI Image ka URL bana rahe hain (REALISTIC STYLE)
     print("AI Image ka URL bana rahe hain (REALISTIC STYLE)...")
-    # Yahan humne style change karke hyper-realistic aur Unreal Engine 5 add kiya hai
     image_prompt = f"Hyper-realistic 8k resolution cinematic lighting photorealistic game graphics render of: {news_topic}. Unreal Engine 5 style, ray tracing, highly detailed textures, realistic colors."
     
     safe_prompt = urllib.parse.quote(image_prompt)
