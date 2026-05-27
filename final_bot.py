@@ -6,9 +6,8 @@ def get_ai_content():
     try:
         api_key = os.environ.get('GROQ_API_KEY')
         
-        # DEBUG CHECK 1: Kya GitHub ne chabi bheji?
         if not api_key:
-            print("❌ FATAL ERROR: GROQ_API_KEY Python tak nahi pahunchi! GitHub Secrets ya YAML file check karein.")
+            print("❌ FATAL ERROR: GROQ_API_KEY Python tak nahi pahunchi!")
             return "Bhaiyo, naya gaming update aane wala hai! Taiyaar ho jao. 🎮🔥 #Gaming #BGMI #FreeFire #GTA6"
 
         topics = [
@@ -19,10 +18,17 @@ def get_ai_content():
         ]
         chosen_topic = random.choice(topics)
         
+        # ---------------------------------------------------------
+        # NAYA STRICT PROMPT (AI ko Hinglish sikhane ke liye)
+        # ---------------------------------------------------------
         prompt = (
-            f"Write a viral Hinglish (Hindi + English) gaming Facebook post about: {chosen_topic}. "
-            "Keep it funny, highly engaging, use lots of emojis and trending hashtags. Target audience: Indian gamers."
+            f"Topic: {chosen_topic}. "
+            "CRITICAL RULE: You MUST write the entire post strictly in 'Hinglish' (Hindi language written in English alphabet). "
+            "DO NOT write in pure English. "
+            "Example style: 'Bhaiyo aur behno, aaj BGMI mein kya hi game hua! Ek camper ne toh dimaag hi kharab kar diya 😂' "
+            "Keep it very funny, engaging, use lots of emojis and trending hashtags. Target audience: Desi Indian gamers."
         )
+        # ---------------------------------------------------------
         
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
@@ -30,10 +36,49 @@ def get_ai_content():
             "Content-Type": "application/json"
         }
         
-        # Naya model aur ekdum perfect spaces ke sath
         data = {
             "model": "llama-3.1-8b-instant", 
             "messages": [{"role": "user", "content": prompt}]
+        }
+        
+        print("Groq AI se naya content mang rahe hain...")
+        response = requests.post(url, headers=headers, json=data)
+        result = response.json()
+        
+        if 'error' in result:
+            print(f"❌ GROQ KA ASLI ERROR: {result['error']}")
+            return "Bhaiyo, naya gaming update aane wala hai! Taiyaar ho jao. 🎮🔥 #Gaming #BGMI #FreeFire #GTA6"
+        
+        return result['choices'][0]['message']['content']
+        
+    except Exception as e:
+        print(f"Python Execution Error: {e}")
+        return "Bhaiyo, naya gaming update aane wala hai! Taiyaar ho jao. 🎮🔥 #Gaming #BGMI #FreeFire #GTA6"
+
+def post_to_facebook():
+    page_id = '318640404662743' 
+    system_token = os.environ.get('FB_TOKEN')
+    
+    token_url = f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}"
+    token_response = requests.get(token_url).json()
+    
+    if 'access_token' in token_response:
+        page_token = token_response['access_token']
+        print("Success: Page Access Token mil gaya!")
+    else:
+        print(f"Token Error: {token_response}")
+        return
+    
+    url = f"https://graph.facebook.com/{page_id}/feed"
+    message = get_ai_content()
+    
+    payload = {'message': message, 'access_token': page_token}
+    
+    r = requests.post(url, data=payload)
+    print(f"Facebook Response: {r.json()}")
+
+if __name__ == "__main__":
+    post_to_facebook()
         }
         
         print("Groq AI se naya content mang rahe hain...")
