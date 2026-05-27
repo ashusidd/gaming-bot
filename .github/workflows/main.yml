@@ -1,11 +1,18 @@
 name: Gaming Bot Auto Post
+
 on:
   schedule:
-    - cron: '0 4 * * *'   # 1. Subah 09:30 AM IST
-    - cron: '0 8 * * *'   # 2. Dopehar 01:30 PM IST
-    - cron: '0 11 * * *'  # 3. Shaam 04:30 PM IST
-    - cron: '0 13 * * *'  # 4. Shaam 06:30 PM IST
-    - cron: '0 17 * * *'  # 5. Raat 10:30 PM IST
+    # 5 Photo Posts (Memes/News)
+    - cron: '0 4 * * *'   # 09:30 IST
+    - cron: '0 8 * * *'   # 13:30 IST
+    - cron: '0 11 * * *'  # 16:30 IST
+    - cron: '0 13 * * *'  # 18:30 IST
+    - cron: '0 17 * * *'  # 22:30 IST
+    
+    # 2 Reel Posts (2 PM & 9 PM IST)
+    - cron: '30 8 * * *'  # 14:00 IST
+    - cron: '30 15 * * *' # 21:00 IST
+    
   workflow_dispatch:
 
 jobs:
@@ -16,16 +23,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install requests Pillow
+        run: |
+          pip install requests Pillow moviepy
+          sudo apt-get update && sudo apt-get install -y ffmpeg imagemagick
 
       - name: Run Bot
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: python final_bot.py
+        run: python dispatcher.py
