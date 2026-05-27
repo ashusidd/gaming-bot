@@ -29,10 +29,11 @@ def get_ai_content():
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
-        data = {
-            "model": "llama3-8b-8192", 
+                data = {
+            "model": "llama-3.1-8b-instant", # Naya, updated aur superfast model
             "messages": [{"role": "user", "content": prompt}]
         }
+
         
         print("Groq AI se naya content mang rahe hain...")
         response = requests.post(url, headers=headers, json=data)
