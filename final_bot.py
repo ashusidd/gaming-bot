@@ -97,12 +97,12 @@ def get_ai_data():
         chosen_topic = random.choice(topics)
         print(f"😂 Aaj ka Topic (GAMER STRUGGLE): {chosen_topic}")
 
-    # Step 3: Text ko Unique rakhne ka naya prompt
+    # Step 3: Text ko Unique rakhne ka naya prompt (FIXED BUG)
     caption_prompt = (
         f"Topic: '{chosen_topic}'. "
-        "CRITICAL RULE: Act as a funny Indian gamer 'Engineers Gamer'. Write a highly engaging Facebook post strictly in 'Hinglish'. "
-        "CRITICAL RULE 2: Make this post 100% unique and fresh. Do not repeat old jokes. "
-        "Keep it very funny, relatable, use lots of emojis and trending hashtags."
+        "CRITICAL RULE 1: Act as a funny Indian gamer ('Engineers Gamer'). Write a short, highly engaging Facebook post strictly in 'Hinglish'. "
+        "CRITICAL RULE 2: YOU MUST ONLY OUTPUT THE FINAL CAPTION TEXT. DO NOT output any headings like 'Engagement strategy', 'Post format', 'Notes', or explanations. "
+        "CRITICAL RULE 3: Make it sound natural and relatable like a real Indian gamer talking to his friends. Keep it short. Add emojis and 4-5 trending hashtags at the end."
     )
     
     url_groq = "https://api.groq.com/openai/v1/chat/completions"
