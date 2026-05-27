@@ -1,62 +1,63 @@
 import requests
 import os
 import random
+import urllib.parse
 
-def get_ai_content():
+def get_ai_data():
     try:
         api_key = os.environ.get('GROQ_API_KEY')
         
-        # DEBUG CHECK 1: Kya GitHub ne chabi bheji?
         if not api_key:
-            print("❌ FATAL ERROR: GROQ_API_KEY Python tak nahi pahunchi! GitHub Secrets ya YAML file check karein.")
-            return "Bhaiyo, naya gaming update aane wala hai! Taiyaar ho jao. 🎮🔥 #Gaming #BGMI #FreeFire #GTA6"
+            print("❌ GROQ_API_KEY nahi mili!")
+            return "Bhaiyo, taiyaar ho jao nayi gaming stream ke liye! 🎮🔥", "https://image.pollinations.ai/prompt/neon%20gaming%20controller%203d?width=1080&height=1080&nologo=true"
 
         topics = [
-            "a funny meme story or relatable situation about BGMI campers",
-            "latest news, leaks or exciting rumors about GTA 6",
-            "pro tips and secret tricks for Free Fire players",
-            "a 'Reaction Poll' asking Indian gamers to choose between BGMI and Free Fire. Ask to use Facebook reactions (Like 👍, Heart ❤️)."
+            "BGMI campers funny situation",
+            "GTA 6 exciting leaks",
+            "Free Fire pro headshot tricks",
+            "Indian gamers slow internet struggle"
         ]
         chosen_topic = random.choice(topics)
         
-        # ---------------------------------------------------------
-        # UPDATED: Strict Hinglish Instructions
-        # ---------------------------------------------------------
-        prompt = (
+        # 1. Groq se Hinglish Caption Likhwana
+        caption_prompt = (
             f"Topic: {chosen_topic}. "
             "CRITICAL RULE: You MUST write the entire post strictly in 'Hinglish' (Hindi language written in English alphabet). "
             "DO NOT write in pure English. "
-            "Example style: 'Bhaiyo aur behno, aaj BGMI mein kya hi game hua! Ek camper ne toh dimaag hi kharab kar diya 😂' "
-            "Keep it very funny, engaging, use lots of emojis and trending hashtags. Target audience: Desi Indian gamers."
+            "Example style: 'Bhaiyo aur behno, aaj BGMI mein kya hi game hua! 😂' "
+            "Keep it very funny, engaging, use lots of emojis and trending hashtags."
         )
-        # ---------------------------------------------------------
         
-        url = "https://api.groq.com/openai/v1/chat/completions"
+        url_groq = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
-        
-        # Naya model aur ekdum perfect spaces ke sath
         data = {
             "model": "llama-3.1-8b-instant", 
-            "messages": [{"role": "user", "content": prompt}]
+            "messages": [{"role": "user", "content": caption_prompt}]
         }
         
-        print("Groq AI se naya content mang rahe hain...")
-        response = requests.post(url, headers=headers, json=data)
+        print("Groq AI se Hinglish caption mang rahe hain...")
+        response = requests.post(url_groq, headers=headers, json=data)
         result = response.json()
+        caption = result['choices'][0]['message']['content']
         
-        # DEBUG CHECK 2: Kya Groq ne API key reject ki?
-        if 'error' in result:
-            print(f"❌ GROQ KA ASLI ERROR: {result['error']}")
-            return "Bhaiyo, naya gaming update aane wala hai! Taiyaar ho jao. 🎮🔥 #Gaming #BGMI #FreeFire #GTA6"
+        # 2. Free AI se Image Generate karna (Pollinations AI)
+        print("AI Image ka URL bana rahe hain...")
+        image_prompt = f"3D high quality cartoon style concept art about {chosen_topic} video game, highly detailed, colorful, vibrant"
         
-        return result['choices'][0]['message']['content']
+        # Text ko URL format mein convert karna (spaces ko %20 banana)
+        safe_prompt = urllib.parse.quote(image_prompt)
+        
+        # 1080x1080 (Square HD Image)
+        image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true"
+        
+        return caption, image_url
         
     except Exception as e:
-        print(f"Python Execution Error: {e}")
-        return "Bhaiyo, naya gaming update aane wala hai! Taiyaar ho jao. 🎮🔥 #Gaming #BGMI #FreeFire #GTA6"
+        print(f"Error: {e}")
+        return "Bhaiyo, taiyaar ho jao nayi gaming stream ke liye! 🎮🔥", "https://image.pollinations.ai/prompt/neon%20gaming%20controller%203d?width=1080&height=1080&nologo=true"
 
 def post_to_facebook():
     page_id = '318640404662743' 
@@ -72,11 +73,20 @@ def post_to_facebook():
         print(f"Token Error: {token_response}")
         return
     
-    url = f"https://graph.facebook.com/{page_id}/feed"
-    message = get_ai_content()
+    # AI se Text aur Image URL dono lena
+    caption, image_url = get_ai_data()
     
-    payload = {'message': message, 'access_token': page_token}
+    # NAYA DARWAZA: '/feed' ki jagah ab hum '/photos' use kar rahe hain
+    url = f"https://graph.facebook.com/{page_id}/photos"
     
+    # Payload mein 'message' (Text) aur 'url' (Photo ka link) dono bhejna
+    payload = {
+        'message': caption, 
+        'url': image_url,
+        'access_token': page_token
+    }
+    
+    print("Facebook par Photo upload ho rahi hai...")
     r = requests.post(url, data=payload)
     print(f"Facebook Response: {r.json()}")
 
