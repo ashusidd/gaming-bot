@@ -35,13 +35,15 @@ def get_ai_data():
     # Step 1: Live News fetch karne ki koshish
     live_news = get_live_news()
     
-    # Step 2: 50-50 Logic - Ya toh Live News, ya phir humari 50-topic wali list
-    # random.choice([True, False]) ek sikka (coin) uchhalta hai
-    if live_news and random.choice([True, False]):
+    # Step 2: NAYA LOGIC - 75% Topics aur 25% Live News ki Setting
+    # random.choices se hum weights (wazan) define kar rahe hain
+    choice = random.choices(['news', 'topic'], weights=[25, 75], k=1)[0]
+    
+    if live_news and choice == 'news':
         chosen_topic = f"Breaking Gaming News: {live_news}"
-        print(f"🔥 Aaj ka Topic (LIVE NEWS): {chosen_topic}")
+        print(f"🔥 Aaj ka Topic (LIVE NEWS - 25% Chance): {chosen_topic}")
     else:
-        # Humara 50 Topics ka Massive Backup
+        # Humara 50 Topics ka Massive Backup (75% Chance)
         topics = [
             "BGMI random teammates doing stupid things",
             "Landing at Pochinki and getting no gun in BGMI",
@@ -95,9 +97,9 @@ def get_ai_data():
             "The ultimate dream of buying a high-end gaming setup after getting a job"
         ]
         chosen_topic = random.choice(topics)
-        print(f"😂 Aaj ka Topic (GAMER STRUGGLE): {chosen_topic}")
+        print(f"😂 Aaj ka Topic (GAMER STRUGGLE - 75% Chance): {chosen_topic}")
 
-    # Step 3: Text ko Unique rakhne ka naya prompt (FIXED BUG)
+    # Step 3: Text ko Unique rakhne ka naya prompt
     caption_prompt = (
         f"Topic: '{chosen_topic}'. "
         "CRITICAL RULE 1: Act as a funny Indian gamer ('Engineers Gamer'). Write a short, highly engaging Facebook post strictly in 'Hinglish'. "
@@ -108,20 +110,19 @@ def get_ai_data():
     url_groq = "https://api.groq.com/openai/v1/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     
-    # Temperature 0.8 rakha hai taaki AI har baar naye words soche (100% unique)
     data = {"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": caption_prompt}], "temperature": 0.8}
     
     print("Groq AI se 100% unique Hinglish caption banwa rahe hain...")
     caption = requests.post(url_groq, headers=headers, json=data).json()['choices'][0]['message']['content']
     
-    # Step 4: Image ko Unique rakhne ka Seed Logic
-    print("AI Image ka URL bana rahe hain (REALISTIC STYLE & 100% UNIQUE)...")
+    # Step 4: Image ko REALISTIC aur 100% UNIQUE rakhne ka logic
+    print("AI Image ka URL bina cartoonish tone ke bana rahe hain...")
     unique_seed = int(time.time()) + random.randint(1, 100000)
     
-    image_prompt = f"Hyper-realistic 8k resolution cinematic lighting photorealistic game graphics render of: {chosen_topic}. Unreal Engine 5 style, highly detailed textures, vibrant."
+    # NAYA PROMPT: Unreal Engine 5 style fix kiya gaya hai
+    image_prompt = f"{chosen_topic}, ultra-realistic gaming environment, photorealistic, Unreal Engine 5 render, cinematic lighting, 8k resolution, dark and gritty tone"
     safe_prompt = urllib.parse.quote(image_prompt)
     
-    # URL ke end mein '&seed=...' laga diya
     image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true&seed={unique_seed}"
     
     return caption, image_url
