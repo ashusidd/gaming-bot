@@ -18,7 +18,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # NAYA CHANGE 1: Write permission de rahe hain taaki JSON save ho sake
     permissions:
       contents: write 
       
@@ -35,6 +34,7 @@ jobs:
         run: |
           pip install requests Pillow moviepy==1.0.3
           sudo apt-get update && sudo apt-get install -y ffmpeg imagemagick
+          sudo sed -i '/pattern="@\*/d' /etc/ImageMagick-6/policy.xml
 
       - name: Run Bot
         env:
@@ -42,11 +42,9 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python dispatcher.py
 
-      # NAYA CHANGE 2: Updated topics.json ko wapas GitHub repo mein save karna
       - name: Commit and Push Updated JSON
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add topics.json
-          # Agar file change hui hai tabhi commit karo, warna error mat do
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update used topics [skip ci]" && git push)
