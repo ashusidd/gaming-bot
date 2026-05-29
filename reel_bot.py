@@ -4,6 +4,8 @@ import random
 import json
 import time
 import urllib.parse
+import textwrap
+from PIL import Image
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip
 
 def get_topic():
@@ -30,14 +32,14 @@ def get_random_music():
         files = [f for f in os.listdir(music_folder) if f.endswith(".mp3")]
         if files:
             return os.path.join(music_folder, random.choice(files))
-    print("⚠️ Music folder ya files nahi mili. Bina music ke Reel banegi.")
+    print("⚠️ Music folder ya files nahi mili.")
     return None
 
 def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nComment below! 👇\n#EngineersGamer #GamingLife #ReelsIndia"
     
-    print(f"🎨 Image Generate ho rahi hai topic par: {topic}")
+    print(f"🎨 Image Generate ho rahi hai: {topic}")
     seed = int(time.time())
     visual_prompt = f"{topic}, 3D high quality gaming concept art, highly detailed, vivid colors"
     safe_prompt = urllib.parse.quote(visual_prompt)
@@ -47,38 +49,55 @@ def create_and_upload_reel():
         img_data = requests.get(img_url).content
         with open("reel_temp.jpg", "wb") as f: 
             f.write(img_data)
+            
+        # FIX 1: Image Stretching Fix (PIL use karke perfect 9:16 Crop & Resize)
+        img = Image.open("reel_temp.jpg")
+        target_ratio = 1080 / 1920
+        img_ratio = img.width / img.height
+        
+        if img_ratio > target_ratio:
+            new_width = int(target_ratio * img.height)
+            offset = (img.width - new_width) // 2
+            img = img.crop((offset, 0, img.width - offset, img.height))
+        else:
+            new_height = int(img.width / target_ratio)
+            offset = (img.height - new_height) // 2
+            img = img.crop((0, offset, img.width, img.height - offset))
+            
+        img = img.resize((1080, 1920), Image.Resampling.LANCZOS)
+        img.save("reel_temp_fixed.jpg")
+        
     except Exception as e:
-        print(f"❌ Image Download Error: {e}")
+        print(f"❌ Image Error: {e}")
         return
 
-    print("🎬 Rendering 15s Reel...")
-    clip = ImageClip("reel_temp.jpg").set_duration(15)
+    print("🎬 Rendering 15s HD Reel...")
+    clip = ImageClip("reel_temp_fixed.jpg").set_duration(15)
     
-    # MAIN TEXT: 900px ka bounding box taaki text bahar na jaye
-    final_text = f"{topic}\n\n👇 COMMENT YOUR VOTE!"
+    # FIX 2: Text Overflow Fix (Manual Wrap at 22 characters)
+    wrapped_topic = textwrap.fill(topic, width=22)
+    final_text = f"{wrapped_topic}\n\n👇 COMMENT YOUR VOTE!"
+    
     txt = TextClip(
         final_text, 
-        fontsize=55, 
+        fontsize=65, 
         color='white', 
         font='Arial-Bold', 
-        size=(900, None),
-        method='caption',
         align='center', 
         stroke_color='black', 
-        stroke_width=2
+        stroke_width=3
     ).set_pos('center').set_duration(15)
     
-    # NAYA LOGIC: Watermark Text "Er Ashu Gaming" (Position 1820 - Ekdum niche)
+    # FIX 3: Watermark Visibility Fix (Position 1500)
     watermark = TextClip(
         "Er Ashu Gaming", 
-        fontsize=40, 
+        fontsize=45, 
         color='white', 
         font='Arial-Bold', 
         stroke_color='black', 
         stroke_width=2
-    ).set_pos(('center', 1820)).set_duration(15)
+    ).set_pos(('center', 1500)).set_duration(15)
     
-    # Dono text ko video par set kar diya
     video = CompositeVideoClip([clip, txt, watermark])
 
     music_file = get_random_music()
@@ -88,7 +107,7 @@ def create_and_upload_reel():
 
     video.write_videofile("final_reel.mp4", fps=24, codec='libx264', audio_codec='aac')
 
-    # Facebook Page Authorization & Upload
+    # Facebook Upload
     page_id = '318640404662743'
     system_token = os.environ.get('FB_TOKEN')
     
@@ -97,7 +116,6 @@ def create_and_upload_reel():
     
     if 'access_token' in token_response:
         page_token = token_response['access_token']
-        print("✅ Success: Page Access Token mil gaya!")
     else:
         print(f"❌ Token Error: {token_response}")
         return
@@ -106,10 +124,15 @@ def create_and_upload_reel():
     
     try:
         with open("final_reel.mp4", 'rb') as video_file:
+            # FIX 4: FB Video Caption Fix (message ki jagah description)
             files = {'source': video_file}
-            payload = {'message': caption, 'access_token': page_token}
+            payload = {
+                'description': caption, 
+                'title': 'Gaming Reels',
+                'access_token': page_token
+            }
             
-            print("🚀 Facebook par Reel upload ho rahi hai...")
+            print("🚀 Uploading to Facebook...")
             r = requests.post(url, data=payload, files=files)
             print(f"Upload Response: {r.json()}")
     except Exception as e:
