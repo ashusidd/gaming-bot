@@ -37,7 +37,7 @@ def create_and_upload_reel():
 
     music_file = get_random_music()
     if music_file:
-        audio = AudioFileClip(music_file).subclip(0, 15).fadeout(1.0)
+        audio = AudioFileClip(music_file).subclip(0, 15)
         video = video.set_audio(audio)
 
     video.write_videofile("final_reel.mp4", fps=24, codec='libx264', audio_codec='aac')
