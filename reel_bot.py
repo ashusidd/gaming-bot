@@ -4,6 +4,7 @@ import random
 import json
 import time
 import urllib.parse
+import textwrap  # NAYA: Text ko screen ke andar rakhne ke liye
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip
 
 def get_topic():
@@ -37,6 +38,7 @@ def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nComment below! 👇\n#EngineersGamer #GamingLife #ReelsIndia"
     
+    # 1. Download Image
     print(f"🎨 Image Generate ho rahi hai topic par: {topic}")
     seed = int(time.time())
     visual_prompt = f"{topic}, 3D high quality gaming concept art, highly detailed, vivid colors"
@@ -51,11 +53,17 @@ def create_and_upload_reel():
         print(f"❌ Image Download Error: {e}")
         return
 
+    # 2. Render Video (15 Seconds)
     print("🎬 Rendering 15s Reel...")
     clip = ImageClip("reel_temp.jpg").set_duration(15)
     
-    # TextClip configuration
-    txt = TextClip(f"{topic}\nCOMMENT YOUR VOTE!", fontsize=50, color='white', font='Arial-Bold', size=(800, None), method='caption').set_pos('center').set_duration(15)
+    # NAYA LOGIC: Text ko properly format karna
+    wrapped_topic = textwrap.fill(topic, width=25)  # Ek line mein max 25 characters
+    final_text = f"{wrapped_topic}\n\n👇 COMMENT YOUR VOTE!"
+    
+    # NAYA DESIGN: Center alignment aur Black Outline
+    txt = TextClip(final_text, fontsize=60, color='white', font='Arial-Bold', align='center', stroke_color='black', stroke_width=2).set_pos('center').set_duration(15)
+    
     video = CompositeVideoClip([clip, txt])
 
     music_file = get_random_music()
@@ -65,7 +73,7 @@ def create_and_upload_reel():
 
     video.write_videofile("final_reel.mp4", fps=24, codec='libx264', audio_codec='aac')
 
-    # Facebook Page Authorization & Upload
+    # 3. Facebook Page Authorization & Upload
     page_id = '318640404662743'
     system_token = os.environ.get('FB_TOKEN')
     
