@@ -5,7 +5,7 @@ import json
 import time
 import urllib.parse
 import textwrap
-from PIL import Image  # NAYA: Image ko exact 1080px fit karne ke liye
+from PIL import Image
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
 
 def get_topic():
@@ -41,7 +41,9 @@ def create_and_upload_reel():
     
     print(f"🎨 Image Generate ho rahi hai: {topic}")
     seed = int(time.time())
-    visual_prompt = f"{topic}, 3D high quality gaming concept art, highly detailed, vivid colors"
+    
+    # 🔥 NAYA PROMPT: Neon/Cartoon style hata kar Realistic aur Dark Cinematic vibe lagayi hai
+    visual_prompt = f"{topic}, ultra-realistic gaming environment, photorealistic, Unreal Engine 5 render, cinematic lighting, 8k resolution, dark and gritty tone"
     safe_prompt = urllib.parse.quote(visual_prompt)
     img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
     
@@ -50,7 +52,7 @@ def create_and_upload_reel():
         with open("reel_temp.jpg", "wb") as f: 
             f.write(img_data)
             
-        # THE FIX: Image ko zabardasti 1080x1080 karna taaki side gap na bache
+        # Image ko exact 1080x1080 stretch karte hain taaki side gap na bache
         img = Image.open("reel_temp.jpg")
         img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
         img.save("reel_temp.jpg")
@@ -64,7 +66,7 @@ def create_and_upload_reel():
     # Background (Dark Grey)
     bg_clip = ColorClip(size=(1080, 1920), color=(15, 15, 15)).set_duration(15)
     
-    # Square Image (Ab yeh poori width cover karegi)
+    # Square Image
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
     # TOP TEXT
