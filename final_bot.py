@@ -127,13 +127,13 @@ def get_ai_data():
     return caption, image_url
 
 def add_watermark(image_url):
-    print("Image download karke 'Engineers Gamer' ka watermark laga rahe hain...")
+    print("Image download karke 'Er Ashu Gaming' ka watermark laga rahe hain...")
     try:
         img_data = requests.get(image_url).content
         img = Image.open(io.BytesIO(img_data))
         
         draw = ImageDraw.Draw(img)
-        watermark_text = " Engineers Gamer "
+        watermark_text = " Er Ashu Gaming "
         
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 45)
