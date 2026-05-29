@@ -5,8 +5,7 @@ import json
 import time
 import urllib.parse
 import textwrap
-from PIL import Image
-from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip
+from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
 
 def get_topic():
     try:
@@ -39,66 +38,51 @@ def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nComment below! 👇\n#EngineersGamer #GamingLife #ReelsIndia"
     
+    # 1. SQUARE IMAGE GENERATE KARNA (1080x1080) - Stretch nahi hogi
     print(f"🎨 Image Generate ho rahi hai: {topic}")
     seed = int(time.time())
     visual_prompt = f"{topic}, 3D high quality gaming concept art, highly detailed, vivid colors"
     safe_prompt = urllib.parse.quote(visual_prompt)
-    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1920&seed={seed}&nologo=true"
+    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
     
     try:
         img_data = requests.get(img_url).content
         with open("reel_temp.jpg", "wb") as f: 
             f.write(img_data)
-            
-        # FIX 1: Image Stretching Fix (PIL use karke perfect 9:16 Crop & Resize)
-        img = Image.open("reel_temp.jpg")
-        target_ratio = 1080 / 1920
-        img_ratio = img.width / img.height
-        
-        if img_ratio > target_ratio:
-            new_width = int(target_ratio * img.height)
-            offset = (img.width - new_width) // 2
-            img = img.crop((offset, 0, img.width - offset, img.height))
-        else:
-            new_height = int(img.width / target_ratio)
-            offset = (img.height - new_height) // 2
-            img = img.crop((0, offset, img.width, img.height - offset))
-            
-        img = img.resize((1080, 1920), Image.Resampling.LANCZOS)
-        img.save("reel_temp_fixed.jpg")
-        
     except Exception as e:
         print(f"❌ Image Error: {e}")
         return
 
     print("🎬 Rendering 15s HD Reel...")
-    clip = ImageClip("reel_temp_fixed.jpg").set_duration(15)
     
-    # FIX 2: Text Overflow Fix (Manual Wrap at 22 characters)
-    wrapped_topic = textwrap.fill(topic, width=22)
+    # 2. UI LAYOUT DESIGN (Frontend Style)
+    # Layer 1: Dark Grey Background (1080x1920)
+    bg_clip = ColorClip(size=(1080, 1920), color=(20, 20, 20)).set_duration(15)
+    
+    # Layer 2: Square Image (Center mein placed)
+    img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
+    
+    # Layer 3: Main Text (Upar ki taraf - Y position 250)
+    wrapped_topic = textwrap.fill(topic, width=25)
     final_text = f"{wrapped_topic}\n\n👇 COMMENT YOUR VOTE!"
-    
-    txt = TextClip(
+    txt_clip = TextClip(
         final_text, 
         fontsize=65, 
         color='white', 
         font='Arial-Bold', 
-        align='center', 
-        stroke_color='black', 
-        stroke_width=3
-    ).set_pos('center').set_duration(15)
+        align='center'
+    ).set_position(('center', 250)).set_duration(15)
     
-    # FIX 3: Watermark Visibility Fix (Position 1500)
+    # Layer 4: Watermark (Niche ki taraf - Y position 1550)
     watermark = TextClip(
         "Er Ashu Gaming", 
         fontsize=45, 
-        color='white', 
-        font='Arial-Bold', 
-        stroke_color='black', 
-        stroke_width=2
-    ).set_pos(('center', 1500)).set_duration(15)
+        color='#FFD700',  # Thoda golden/yellow color diya hai taaki alag se chamke
+        font='Arial-Bold'
+    ).set_position(('center', 1550)).set_duration(15)
     
-    video = CompositeVideoClip([clip, txt, watermark])
+    # Sabhi layers ko ek ke upar ek rakh diya
+    video = CompositeVideoClip([bg_clip, img_clip, txt_clip, watermark])
 
     music_file = get_random_music()
     if music_file:
@@ -107,7 +91,7 @@ def create_and_upload_reel():
 
     video.write_videofile("final_reel.mp4", fps=24, codec='libx264', audio_codec='aac')
 
-    # Facebook Upload
+    # 3. FACEBOOK UPLOAD
     page_id = '318640404662743'
     system_token = os.environ.get('FB_TOKEN')
     
@@ -124,8 +108,8 @@ def create_and_upload_reel():
     
     try:
         with open("final_reel.mp4", 'rb') as video_file:
-            # FIX 4: FB Video Caption Fix (message ki jagah description)
             files = {'source': video_file}
+            # FACEBOOK CAPTION FIX: Video ke liye 'description' use hota hai
             payload = {
                 'description': caption, 
                 'title': 'Gaming Reels',
