@@ -6,7 +6,7 @@ import time
 import urllib.parse
 import textwrap
 from PIL import Image
-from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip
+from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
 
 def get_topic():
     try:
@@ -24,7 +24,7 @@ def get_topic():
         return topic
     except Exception as e:
         print(f"Topic Error: {e}")
-        return "Free Fire vs PUBG: Choose Your Path"
+        return "Building a Dirt House vs Digging a Cave"
 
 def get_random_music():
     music_folder = "music"
@@ -42,30 +42,26 @@ def create_and_upload_reel():
     print(f"🎨 Image Generate ho rahi hai (COMPARISON STYLE): {topic}")
     seed = int(time.time()) + random.randint(1, 1000)
     
-    # 🔥 NAYA LOGIC: Engagement Bait / Split Screen Styles (1080x1920)
     visual_styles = [
         "split-screen comparison layout, two different gaming worlds side by side, 'choose your path' concept, a gamer standing in the middle deciding, vibrant 3D cartoonish style",
-        "interactive social media poll format, 3-way horizontal split screen, bright and colorful gaming assets, stylized 3D render like Free Fire posters",
-        "epic versus battle concept art, red vs blue neon lighting, divided screen, highly detailed 3D animated character style",
-        "grid layout showing different glowing gaming items, 'which one are you using' concept, vivid colors, masterpiece"
+        "interactive social media poll format, horizontal split screen, bright and colorful gaming assets, stylized 3D render like Free Fire posters",
+        "epic versus battle concept art, red vs blue neon lighting, divided screen, highly detailed 3D animated character style"
     ]
     random_style = random.choice(visual_styles)
     
-    # Prompt ko merge karna
     visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
     safe_prompt = urllib.parse.quote(visual_prompt)
     
-    # EXACT Reel Size (1080x1920) set kiya hai taaki full screen aaye
-    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1920&seed={seed}&nologo=true"
+    # 1080x1080 (Square Image) taaki perfect center mein fit ho
+    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
     
     try:
         img_data = requests.get(img_url).content
         with open("reel_temp.jpg", "wb") as f: 
             f.write(img_data)
             
-        # Image ko bina stretch kiye exactly screen par fit karna
         img = Image.open("reel_temp.jpg")
-        img = img.resize((1080, 1920), Image.Resampling.LANCZOS)
+        img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
         img.save("reel_temp.jpg")
         
     except Exception as e:
@@ -74,43 +70,41 @@ def create_and_upload_reel():
 
     print("🎬 Rendering 15s HD Reel...")
     
-    # OVERLAY LAYOUT DESIGN
-    img_clip = ImageClip("reel_temp.jpg").set_duration(15)
+    # 🔥 FIX 1: Pitch Black Background (0, 0, 0)
+    bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
     
-    # TOP TEXT
-    wrapped_topic = textwrap.fill(topic, width=22)
+    # 🔥 FIX 2: Exact Center Image (Y-axis par 420 se 1500 tak jagah gheregi)
+    img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
+    
+    # 🔥 FIX 3: Top Text (Bold, Pure White, No Stroke)
+    # Width thodi kam ki hai (20 chars) taaki text naturally bada aur chouda dikhe
+    wrapped_topic = textwrap.fill(topic, width=20)
     topic_clip = TextClip(
         wrapped_topic, 
-        fontsize=70,
+        fontsize=85, # Size kaafi bada kar diya
         color='white', 
         font='Arial-Bold', 
-        align='center',
-        stroke_color='black',
-        stroke_width=4
-    ).set_position(('center', 200)).set_duration(15)
+        align='center'
+    ).set_position(('center', 120)).set_duration(15) # Top black space ke center mein (Y=120)
     
-    # BOTTOM TEXT 
+    # 🔥 FIX 4: Bottom Text (Ekdum Meme jaisa bada text)
     vote_clip = TextClip(
-        "👇 COMMENT YOUR VOTE!", 
-        fontsize=65, 
-        color='#FFD700', 
-        font='Arial-Bold',
-        align='center',
-        stroke_color='black',
-        stroke_width=4
-    ).set_position(('center', 1500)).set_duration(15)
-    
-    # WATERMARK
-    watermark = TextClip(
-        "Er Ashu Gaming", 
-        fontsize=40, 
+        "COMMENT YOUR VOTE", 
+        fontsize=80, 
         color='white', 
         font='Arial-Bold',
-        stroke_color='black',
-        stroke_width=2
-    ).set_position(('center', 1720)).set_duration(15)
+        align='center'
+    ).set_position(('center', 1580)).set_duration(15) # Bottom black space mein (Y=1580)
     
-    video = CompositeVideoClip([img_clip, topic_clip, vote_clip, watermark])
+    # WATERMARK (Thoda niche, thoda subtle)
+    watermark = TextClip(
+        "ER ASHU GAMING", 
+        fontsize=35, 
+        color='gray', 
+        font='Arial-Bold'
+    ).set_position(('center', 1800)).set_duration(15)
+    
+    video = CompositeVideoClip([bg_clip, img_clip, topic_clip, vote_clip, watermark])
 
     music_file = get_random_music()
     if music_file:
