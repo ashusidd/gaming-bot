@@ -3,15 +3,15 @@ name: Gaming Bot Auto Post
 on:
   schedule:
     # 5 Photo Posts (Memes/News)
-    - cron: '0 4 * * *'   # 09:30 IST
-    - cron: '0 8 * * *'   # 13:30 IST
-    - cron: '0 11 * * *'  # 16:30 IST
-    - cron: '0 13 * * *'  # 18:30 IST
-    - cron: '0 17 * * *'  # 22:30 IST
+    - cron: '0 4 * * *'   # 09:30 AM IST
+    - cron: '0 8 * * *'   # 01:30 PM IST
+    - cron: '0 11 * * *'  # 04:30 PM IST
+    - cron: '0 13 * * *'  # 06:30 PM IST
+    - cron: '0 17 * * *'  # 22:30 PM IST
     
-    # 2 Reel Posts (2 PM & 9 PM IST)
-    - cron: '30 8 * * *'  # 14:00 IST
-    - cron: '30 15 * * *' # 21:00 IST
+    # 2 Reel Posts (02:00 PM & 09:00 PM IST)
+    - cron: '30 8 * * *'  # 14:00 PM IST (Reel 1)
+    - cron: '30 15 * * *' # 21:00 PM IST (Reel 2)
     
   workflow_dispatch:
 
@@ -25,7 +25,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Saara git history fetch karega taaki rebase fail na ho
+          fetch-depth: 0
         
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,11 +38,19 @@ jobs:
           sudo apt-get update && sudo apt-get install -y ffmpeg imagemagick
           sudo sed -i '/pattern="@\*/d' /etc/ImageMagick-6/policy.xml
 
-      - name: Run Bot
+      # 🚀 THE BIG FIX: Yahan se routing handle hogi
+      - name: Run Bot Based on Schedule
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: python dispatcher.py
+        run: |
+          if [ "${{ github.event.schedule }}" = "30 8 * * *" ] || [ "${{ github.event.schedule }}" = "30 15 * * *" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "🎬 Target Matched: Running REEL Bot..."
+            python reel_bot.py
+          else
+            echo "📸 Target Matched: Running PHOTO Bot..."
+            python final_bot.py
+          fi
 
       - name: Commit and Push Updated JSON
         run: |
