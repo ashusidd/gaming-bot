@@ -9,14 +9,12 @@ import time
 def get_live_news():
     print("Middleman (RSS2JSON) ke zariye Reddit ki Live News nikal rahe hain...")
     try:
-        # The Middleman Trick: Reddit RSS ko JSON mein convert karna bina API key ke
         rss_url = "https://www.reddit.com/r/gamingnews/.rss"
         api_url = f"https://api.rss2json.com/v1/api.json?rss_url={urllib.parse.quote(rss_url)}"
         
         r = requests.get(api_url)
         if r.status_code == 200:
             data = r.json()
-            # Sabse pehli (latest) khabar uthana
             latest_news = data['items'][0]['title']
             return latest_news
         else:
@@ -32,18 +30,13 @@ def get_ai_data():
         print("Error: API Key missing!")
         return "Bhaiyo, taiyaar ho jao nayi gaming stream ke liye! 🎮🔥", None
 
-    # Step 1: Live News fetch karne ki koshish
     live_news = get_live_news()
-    
-    # Step 2: NAYA LOGIC - 75% Topics aur 25% Live News ki Setting
-    # random.choices se hum weights (wazan) define kar rahe hain
     choice = random.choices(['news', 'topic'], weights=[25, 75], k=1)[0]
     
     if live_news and choice == 'news':
         chosen_topic = f"Breaking Gaming News: {live_news}"
-        print(f"🔥 Aaj ka Topic (LIVE NEWS - 25% Chance): {chosen_topic}")
+        print(f"🔥 Aaj ka Topic (LIVE NEWS): {chosen_topic}")
     else:
-        # Humara 50 Topics ka Massive Backup (75% Chance)
         topics = [
             "BGMI random teammates doing stupid things",
             "Landing at Pochinki and getting no gun in BGMI",
@@ -97,30 +90,45 @@ def get_ai_data():
             "The ultimate dream of buying a high-end gaming setup after getting a job"
         ]
         chosen_topic = random.choice(topics)
-        print(f"😂 Aaj ka Topic (GAMER STRUGGLE - 75% Chance): {chosen_topic}")
+        print(f"😂 Aaj ka Topic: {chosen_topic}")
 
-    # Step 3: Text ko Unique rakhne ka naya prompt
+    # 🔥 NAYA LOGIC: FEW-SHOT PROMPTING FOR PERFECT HINGLISH
     caption_prompt = (
-        f"Topic: '{chosen_topic}'. "
-        "CRITICAL RULE 1: Act as a funny Indian gamer ('Engineers Gamer'). Write a short, highly engaging Facebook post strictly in 'Hinglish'. "
-        "CRITICAL RULE 2: YOU MUST ONLY OUTPUT THE FINAL CAPTION TEXT. DO NOT output any headings like 'Engagement strategy', 'Post format', 'Notes', or explanations. "
-        "CRITICAL RULE 3: Make it sound natural and relatable like a real Indian gamer talking to his friends. Keep it short. Add emojis and 4-5 trending hashtags at the end."
+        f"Topic: '{chosen_topic}'.\n\n"
+        "Act as a funny Indian gaming meme page male admin ('Er Ashu Gaming'). Write a short, 4-line Facebook caption in NATURAL HINGLISH (Hindi language written in English alphabet mixed with English gaming words).\n\n"
+        "EXAMPLES OF GOOD HINGLISH:\n"
+        "- 'Bhai yaar yeh ping issue ne dimaag kharab kar diya hai! Kis kis ke sath aisa hota hai? 😂'\n"
+        "- 'Relatable pro max! Jab random teammate loot chura le toh kaisa feel hota hai bhaiyo? 💀👇'\n"
+        "- 'Exam kal hai aur hum yahan rank push kar rahe hain. 🥲 Comment your rank!'\n\n"
+        "CRITICAL RULES:\n"
+        "1. DO NOT use formal or weird translated Hindi. Talk like a normal Indian gamer.\n"
+        "2. Keep it very short (Max 2 lines).\n"
+        "3. End with an engaging question asking people to comment (e.g., 'Sach batao kis kis ke sath hua hai? 👇').\n"
+        "4. DO NOT output any extra text, headings, or notes. ONLY the caption and 3-4 hashtags."
     )
     
     url_groq = "https://api.groq.com/openai/v1/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     
-    data = {"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": caption_prompt}], "temperature": 0.8}
+    data = {"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": caption_prompt}], "temperature": 0.7}
     
-    print("Groq AI se 100% unique Hinglish caption banwa rahe hain...")
+    print("Groq AI se Natural Hinglish caption banwa rahe hain...")
     caption = requests.post(url_groq, headers=headers, json=data).json()['choices'][0]['message']['content']
     
-    # Step 4: Image ko REALISTIC aur 100% UNIQUE rakhne ka logic
-    print("AI Image ka URL bina cartoonish tone ke bana rahe hain...")
+    # AI Image Generation
+    print("AI Image ka URL naye Dynamic Styles ke sath bana rahe hain...")
     unique_seed = int(time.time()) + random.randint(1, 100000)
     
-    # NAYA PROMPT: Unreal Engine 5 style fix kiya gaya hai
-    image_prompt = f"{chosen_topic}, ultra-realistic gaming environment, photorealistic, Unreal Engine 5 render, cinematic lighting, 8k resolution, dark and gritty tone"
+    visual_styles = [
+        "first-person POV in-game action screenshot, vibrant lighting, highly detailed",
+        "cinematic movie poster style, dramatic epic low angle, Unreal Engine 5",
+        "e-sports tournament stage setting, neon RGB lights, massive crowd background, 8k",
+        "dark and gritty cinematic render, intense shadows, photorealistic",
+        "vibrant concept art style, highly detailed gaming environment, dynamic composition"
+    ]
+    random_style = random.choice(visual_styles)
+    
+    image_prompt = f"{chosen_topic}, {random_style}, masterpiece, trending on artstation"
     safe_prompt = urllib.parse.quote(image_prompt)
     
     image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true&seed={unique_seed}"
