@@ -6,7 +6,7 @@ import time
 import urllib.parse
 import textwrap
 from PIL import Image
-from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
+from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip
 
 def get_topic():
     try:
@@ -24,7 +24,7 @@ def get_topic():
         return topic
     except Exception as e:
         print(f"Topic Error: {e}")
-        return "Free Fire vs BGMI: Asli King kaun?"
+        return "Free Fire vs PUBG: Choose Your Path"
 
 def get_random_music():
     music_folder = "music"
@@ -37,24 +37,35 @@ def get_random_music():
 
 def create_and_upload_reel():
     topic = get_topic()
-    caption = f"POV: {topic} 💀😂\n\nComment below! 👇\n#EngineersGamer #GamingLife #ReelsIndia"
+    caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
     
-    print(f"🎨 Image Generate ho rahi hai: {topic}")
-    seed = int(time.time())
+    print(f"🎨 Image Generate ho rahi hai (COMPARISON STYLE): {topic}")
+    seed = int(time.time()) + random.randint(1, 1000)
     
-    # 🔥 NAYA PROMPT: Neon/Cartoon style hata kar Realistic aur Dark Cinematic vibe lagayi hai
-    visual_prompt = f"{topic}, ultra-realistic gaming environment, photorealistic, Unreal Engine 5 render, cinematic lighting, 8k resolution, dark and gritty tone"
+    # 🔥 NAYA LOGIC: Engagement Bait / Split Screen Styles (1080x1920)
+    visual_styles = [
+        "split-screen comparison layout, two different gaming worlds side by side, 'choose your path' concept, a gamer standing in the middle deciding, vibrant 3D cartoonish style",
+        "interactive social media poll format, 3-way horizontal split screen, bright and colorful gaming assets, stylized 3D render like Free Fire posters",
+        "epic versus battle concept art, red vs blue neon lighting, divided screen, highly detailed 3D animated character style",
+        "grid layout showing different glowing gaming items, 'which one are you using' concept, vivid colors, masterpiece"
+    ]
+    random_style = random.choice(visual_styles)
+    
+    # Prompt ko merge karna
+    visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
     safe_prompt = urllib.parse.quote(visual_prompt)
-    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
+    
+    # EXACT Reel Size (1080x1920) set kiya hai taaki full screen aaye
+    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1920&seed={seed}&nologo=true"
     
     try:
         img_data = requests.get(img_url).content
         with open("reel_temp.jpg", "wb") as f: 
             f.write(img_data)
             
-        # Image ko exact 1080x1080 stretch karte hain taaki side gap na bache
+        # Image ko bina stretch kiye exactly screen par fit karna
         img = Image.open("reel_temp.jpg")
-        img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+        img = img.resize((1080, 1920), Image.Resampling.LANCZOS)
         img.save("reel_temp.jpg")
         
     except Exception as e:
@@ -63,41 +74,43 @@ def create_and_upload_reel():
 
     print("🎬 Rendering 15s HD Reel...")
     
-    # Background (Dark Grey)
-    bg_clip = ColorClip(size=(1080, 1920), color=(15, 15, 15)).set_duration(15)
-    
-    # Square Image
-    img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
+    # OVERLAY LAYOUT DESIGN
+    img_clip = ImageClip("reel_temp.jpg").set_duration(15)
     
     # TOP TEXT
-    wrapped_topic = textwrap.fill(topic, width=25)
+    wrapped_topic = textwrap.fill(topic, width=22)
     topic_clip = TextClip(
         wrapped_topic, 
-        fontsize=75,
+        fontsize=70,
         color='white', 
         font='Arial-Bold', 
-        align='center'
-    ).set_position(('center', 180)).set_duration(15)
+        align='center',
+        stroke_color='black',
+        stroke_width=4
+    ).set_position(('center', 200)).set_duration(15)
     
     # BOTTOM TEXT 
     vote_clip = TextClip(
         "👇 COMMENT YOUR VOTE!", 
-        fontsize=60, 
+        fontsize=65, 
         color='#FFD700', 
         font='Arial-Bold',
-        align='center'
-    ).set_position(('center', 1550)).set_duration(15)
+        align='center',
+        stroke_color='black',
+        stroke_width=4
+    ).set_position(('center', 1500)).set_duration(15)
     
     # WATERMARK
     watermark = TextClip(
         "Er Ashu Gaming", 
         fontsize=40, 
         color='white', 
-        font='Arial-Bold'
+        font='Arial-Bold',
+        stroke_color='black',
+        stroke_width=2
     ).set_position(('center', 1720)).set_duration(15)
     
-    # Layers merge
-    video = CompositeVideoClip([bg_clip, img_clip, topic_clip, vote_clip, watermark])
+    video = CompositeVideoClip([img_clip, topic_clip, vote_clip, watermark])
 
     music_file = get_random_music()
     if music_file:
@@ -106,7 +119,7 @@ def create_and_upload_reel():
 
     video.write_videofile("final_reel.mp4", fps=24, codec='libx264', audio_codec='aac')
 
-    # Facebook Upload Logic
+    # FACEBOOK UPLOAD
     page_id = '318640404662743'
     system_token = os.environ.get('FB_TOKEN')
     
