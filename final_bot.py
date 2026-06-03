@@ -92,10 +92,9 @@ def get_ai_data():
         chosen_topic = random.choice(topics)
         print(f"😂 Aaj ka Topic: {chosen_topic}")
 
-    # 🔥 NAYA LOGIC: FEW-SHOT PROMPTING FOR PERFECT HINGLISH
     caption_prompt = (
         f"Topic: '{chosen_topic}'.\n\n"
-        "Act as a funny Indian gaming meme page male admin ('Er Ashu Gaming'). Write a short, 4-line Facebook caption in NATURAL HINGLISH (Hindi language written in English alphabet mixed with English gaming words).\n\n"
+        "Act as a funny Indian gaming meme page admin ('Engineers Gamer'). Write a short, 2-line Facebook caption in NATURAL HINGLISH (Hindi language written in English alphabet mixed with English gaming words).\n\n"
         "EXAMPLES OF GOOD HINGLISH:\n"
         "- 'Bhai yaar yeh ping issue ne dimaag kharab kar diya hai! Kis kis ke sath aisa hota hai? 😂'\n"
         "- 'Relatable pro max! Jab random teammate loot chura le toh kaisa feel hota hai bhaiyo? 💀👇'\n"
@@ -115,7 +114,6 @@ def get_ai_data():
     print("Groq AI se Natural Hinglish caption banwa rahe hain...")
     caption = requests.post(url_groq, headers=headers, json=data).json()['choices'][0]['message']['content']
     
-    # AI Image Generation
     print("AI Image ka URL naye Dynamic Styles ke sath bana rahe hain...")
     unique_seed = int(time.time()) + random.randint(1, 100000)
     
@@ -136,9 +134,17 @@ def get_ai_data():
     return caption, image_url
 
 def add_watermark(image_url):
-    print("Image download karke 'Er Ashu Gaming' ka watermark laga rahe hain...")
+    print("Image download karke check kar rahe hain ki AI ne photo di hai ya fail ho gaya...")
     try:
-        img_data = requests.get(image_url).content
+        r = requests.get(image_url, timeout=15)
+        
+        # 🔥 FIX 1: The Safety Check (Maha-Important!)
+        # Check kar rahe hain ki kya response mein 'image' word hai. Agar nahi, toh reject kardo.
+        if r.status_code != 200 or 'image' not in r.headers.get('Content-Type', ''):
+            print(f"❌ AI Image filter block ho gayi ya server down hai! Status Code: {r.status_code}")
+            return None
+            
+        img_data = r.content
         img = Image.open(io.BytesIO(img_data))
         
         draw = ImageDraw.Draw(img)
@@ -157,7 +163,7 @@ def add_watermark(image_url):
         img.save(img_path)
         return img_path
     except Exception as e:
-        print(f"Watermark Error: {e}")
+        print(f"❌ Watermark ya Image Error: {e}")
         return None
 
 def post_to_facebook():
@@ -176,17 +182,15 @@ def post_to_facebook():
     
     url = f"https://graph.facebook.com/{page_id}/photos"
     
+    # 🔥 FIX 2: Graceful Exit (Facebook ko galat data nahi jayega)
     if local_image_path:
-        print("Facebook par Watermark wali photo upload ho rahi hai...")
+        print("✅ Facebook par Watermark wali photo upload ho rahi hai...")
         payload = {'message': caption, 'access_token': page_token}
         files = {'source': open(local_image_path, 'rb')}
         r = requests.post(url, data=payload, files=files)
+        print(f"Facebook Response: {r.json()}")
     else:
-        print("Watermark fail hua, direct URL bhej rahe hain...")
-        payload = {'message': caption, 'url': image_url, 'access_token': page_token}
-        r = requests.post(url, data=payload)
-        
-    print(f"Facebook Response: {r.json()}")
+        print("🛑 UPLOAD CANCELLED: Image sahi nahi aayi thi, isliye Facebook ko API error dene se bacha liya gaya. Agli cron job naya topic uthayegi.")
 
 if __name__ == "__main__":
     post_to_facebook()
