@@ -52,51 +52,53 @@ def create_and_upload_reel():
     visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
     safe_prompt = urllib.parse.quote(visual_prompt)
     
-    # 1080x1080 (Square Image) taaki perfect center mein fit ho
     img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
     
+    # 🔥 THE FIX: Yahan humne Safety Check lagaya hai
     try:
-        img_data = requests.get(img_url).content
+        print("Image API ko request bhej rahe hain...")
+        r = requests.get(img_url, timeout=20)
+        
+        # Check if the server actually sent an image and not an error text
+        if r.status_code != 200 or 'image' not in r.headers.get('Content-Type', ''):
+            print(f"🛑 CRASH PREVENTED: AI ne valid image nahi di. Status Code: {r.status_code}")
+            print("Agli baar cron job try karega. Exiting safely...")
+            return  # Yahan se program chupchap ruk jayega, crash nahi hoga!
+            
         with open("reel_temp.jpg", "wb") as f: 
-            f.write(img_data)
+            f.write(r.content)
             
         img = Image.open("reel_temp.jpg")
         img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
         img.save("reel_temp.jpg")
         
     except Exception as e:
-        print(f"❌ Image Error: {e}")
+        print(f"❌ Image Download Error: {e}")
         return
 
     print("🎬 Rendering 15s HD Reel...")
     
-    # 🔥 FIX 1: Pitch Black Background (0, 0, 0)
     bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
     
-    # 🔥 FIX 2: Exact Center Image (Y-axis par 420 se 1500 tak jagah gheregi)
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
-    # 🔥 FIX 3: Top Text (Bold, Pure White, No Stroke)
-    # Width thodi kam ki hai (20 chars) taaki text naturally bada aur chouda dikhe
     wrapped_topic = textwrap.fill(topic, width=20)
     topic_clip = TextClip(
         wrapped_topic, 
-        fontsize=85, # Size kaafi bada kar diya
+        fontsize=85, 
         color='white', 
         font='Arial-Bold', 
         align='center'
-    ).set_position(('center', 120)).set_duration(15) # Top black space ke center mein (Y=120)
+    ).set_position(('center', 120)).set_duration(15) 
     
-    # 🔥 FIX 4: Bottom Text (Ekdum Meme jaisa bada text)
     vote_clip = TextClip(
         "COMMENT YOUR VOTE", 
         fontsize=80, 
         color='white', 
         font='Arial-Bold',
         align='center'
-    ).set_position(('center', 1580)).set_duration(15) # Bottom black space mein (Y=1580)
+    ).set_position(('center', 1580)).set_duration(15) 
     
-    # WATERMARK (Thoda niche, thoda subtle)
     watermark = TextClip(
         "ER ASHU GAMING", 
         fontsize=35, 
@@ -145,3 +147,4 @@ def create_and_upload_reel():
 
 if __name__ == "__main__":
     create_and_upload_reel()
+    
