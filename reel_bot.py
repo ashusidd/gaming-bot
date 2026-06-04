@@ -3,6 +3,7 @@ import os
 import random
 import json
 import time
+import urllib.parse
 import textwrap
 from PIL import Image
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
@@ -34,23 +35,23 @@ def get_random_music():
     print("⚠️ Music folder ya files nahi mili.")
     return None
 
-# 🔥 NAYA ENGINE: Hugging Face Stable Diffusion XL
 def generate_ai_image(prompt):
     hf_token = os.environ.get('HF_TOKEN')
     if not hf_token:
         print("❌ ERROR: GitHub Secrets mein HF_TOKEN nahi mila!")
         return False
 
-    # Industry standard image generation model
-    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    # 🔥 FIX 1: Super Fast and Always Active Model (DreamShaper Turbo)
+    API_URL = "https://api-inference.huggingface.co/models/Lykon/dreamshaper-xl-v2-turbo"
     headers = {"Authorization": f"Bearer {hf_token}"}
     payload = {"inputs": prompt}
 
     max_retries = 3
     for attempt in range(max_retries):
-        print(f"Hugging Face API ko request bhej rahe hain (Attempt {attempt + 1}/3)...")
+        print(f"Hugging Face API (DreamShaper) ko request bhej rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            response = requests.post(API_URL, headers=headers, json=payload, timeout=40)
+            # 🔥 FIX 2: Timeout ko 60 seconds kiya taaki network glitche s bachein
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
             
             if response.status_code == 200:
                 with open("reel_temp.jpg", "wb") as f:
@@ -58,19 +59,18 @@ def generate_ai_image(prompt):
                 img = Image.open("reel_temp.jpg")
                 img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
                 img.save("reel_temp.jpg")
-                print("✅ Hugging Face se 8K Image successfully download ho gayi!")
+                print("✅ 8K Image successfully generated!")
                 return True
             
             elif response.status_code == 503:
-                # HF ka server agar thanda pada ho, toh usko warm-up hone mein thoda time lagta hai
-                print("⏳ AI Model load ho raha hai (503). 10 seconds wait kar rahe hain...")
-                time.sleep(10)
+                print("⏳ Model load ho raha hai (503). 15 seconds ka solid wait...")
+                time.sleep(15)
             else:
-                print(f"⚠️ API Error: {response.status_code}. Retrying...")
+                print(f"⚠️ API Error: {response.status_code}. Retrying in 5s...")
                 time.sleep(5)
                 
         except Exception as e:
-            print(f"❌ Network Error: {e}")
+            print(f"❌ Network/DNS Issue in Attempt {attempt + 1}: {e}. Retrying...")
             time.sleep(5)
             
     return False
@@ -88,9 +88,8 @@ def create_and_upload_reel():
     random_style = random.choice(visual_styles)
     visual_prompt = f"{topic}. {random_style}, trending on artstation, masterpiece, 8k resolution"
     
-    # AI Photo Function ko call kiya
     if not generate_ai_image(visual_prompt):
-        print("🛑 UPLOAD CANCELLED: Hugging Face se image nahi ban payi. Bot exit kar raha hai.")
+        print("🛑 UPLOAD CANCELLED: Image nahi ban payi.")
         return
 
     print("🎬 Rendering 15s HD Reel...")
