@@ -4,8 +4,8 @@ import random
 import time
 import textwrap
 import requests
+import urllib.parse
 from PIL import Image
-from huggingface_hub import InferenceClient
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
 
 def get_topic():
@@ -34,42 +34,38 @@ def get_random_music():
     return None
 
 def generate_pure_ai_image(prompt):
-    token = os.environ.get('HF_TOKEN')
-    if not token:
-        print("❌ ERROR: HF_TOKEN nahi mila!")
-        return False
-
-    client = InferenceClient(provider="hf-inference", token=token)
-    
+    # Prompt ko aur bhi realistic banaya gaya hai
     realistic_prompt = f"mdjrny-v4 style, {prompt}, ultra-realistic 3D gaming render, cinematic lighting, masterpiece, 4k"
     
-    max_retries = 3
-    delay = 20
+    # Text ko link format mein badalna
+    safe_prompt = urllib.parse.quote(realistic_prompt)
     
+    # Direct image generation link bina kisi API token ke
+    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true"
+    
+    max_retries = 3
     for attempt in range(max_retries):
-        print(f"Hugging Face SDK Client se image nikal rahe hain (Attempt {attempt + 1}/3)...")
+        print(f"Direct AI Server se image nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            # 🔥 THE TANK MODEL: Sabse stable aur halka model
-            image = client.text_to_image(
-                prompt=realistic_prompt,
-                model="runwayml/stable-diffusion-v1-5"
-            )
-            image.save("reel_temp.jpg")
+            response = requests.get(url, timeout=40)
             
-            img = Image.open("reel_temp.jpg")
-            img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
-            img.save("reel_temp.jpg")
-            
-            print("✅ Pure Realistic AI Image successfully generated!")
-            return True
+            if response.status_code == 200:
+                with open("reel_temp.jpg", "wb") as f:
+                    f.write(response.content)
+                
+                img = Image.open("reel_temp.jpg")
+                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+                img.save("reel_temp.jpg")
+                
+                print("✅ Pure Realistic AI Image successfully generated!")
+                return True
+            else:
+                print(f"❌ Server Error: {response.status_code}")
+                time.sleep(5)
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
-            if "429 Too Many Requests" in str(e):
-                print(f"⏳ Server busy! {delay} seconds ka smart break le rahe hain...")
-                time.sleep(delay)
-                delay = delay * 2  # Exponential backoff
-            else:
-                time.sleep(5)
+            time.sleep(5)
+            
     return False
 
 def create_and_upload_reel():
@@ -114,4 +110,4 @@ def create_and_upload_reel():
 
 if __name__ == "__main__":
     create_and_upload_reel()
-    
+            
