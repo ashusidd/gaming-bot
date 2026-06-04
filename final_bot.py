@@ -4,7 +4,6 @@ import random
 import urllib.parse
 from PIL import Image, ImageDraw, ImageFont
 import time
-from huggingface_hub import InferenceClient
 
 def get_live_news():
     try:
@@ -16,42 +15,34 @@ def get_live_news():
     except: return None
 
 def generate_pure_ai_image(prompt):
-    token = os.environ.get('HF_TOKEN')
-    if not token:
-        print("❌ ERROR: HF_TOKEN missing!")
-        return False
-
-    client = InferenceClient(provider="hf-inference", token=token)
-    
     realistic_prompt = f"mdjrny-v4 style, {prompt}, realistic gaming setup action screenshot, photorealistic, 4k cinematic lighting, highly detailed"
     
-    max_retries = 3
-    delay = 20
+    safe_prompt = urllib.parse.quote(realistic_prompt)
+    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true"
     
+    max_retries = 3
     for attempt in range(max_retries):
-        print(f"Hugging Face SDK Client se photo nikal rahe hain (Attempt {attempt + 1}/3)...")
+        print(f"Direct AI Server se photo nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            # 🔥 THE TANK MODEL: Sabse stable aur halka model
-            image = client.text_to_image(
-                prompt=realistic_prompt,
-                model="runwayml/stable-diffusion-v1-5"
-            )
-            image.save("photo_temp.jpg")
+            response = requests.get(url, timeout=40)
             
-            img = Image.open("photo_temp.jpg")
-            img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
-            img.save("photo_temp.jpg")
-            
-            print("✅ Pure Realistic AI Photo successfully generated!")
-            return True
+            if response.status_code == 200:
+                with open("photo_temp.jpg", "wb") as f:
+                    f.write(response.content)
+                
+                img = Image.open("photo_temp.jpg")
+                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+                img.save("photo_temp.jpg")
+                
+                print("✅ Pure Realistic AI Photo successfully generated!")
+                return True
+            else:
+                print(f"❌ Server Error: {response.status_code}")
+                time.sleep(5)
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
-            if "429 Too Many Requests" in str(e):
-                print(f"⏳ Server busy! {delay} seconds ka break...")
-                time.sleep(delay)
-                delay = delay * 2  # Exponential backoff
-            else:
-                time.sleep(5)
+            time.sleep(5)
+            
     return False
 
 def add_watermark(image_path):
