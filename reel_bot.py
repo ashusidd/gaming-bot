@@ -5,7 +5,6 @@ import time
 import textwrap
 import requests
 from PIL import Image
-# 🔥 Official Hugging Face SDK jo DNS errors ko bypass karta hai
 from huggingface_hub import InferenceClient
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
 
@@ -25,7 +24,7 @@ def get_topic():
         return topic
     except Exception as e:
         print(f"Topic Error: {e}")
-        return "Discord Voice Chat vs In-Game Voice Chat: Better comms?"
+        return "Aggressive Rusher vs Tactical Camper: Your playstyle?"
 
 def get_random_music():
     music_folder = "music"
@@ -40,30 +39,34 @@ def generate_pure_ai_image(prompt):
         print("❌ ERROR: HF_TOKEN nahi mila!")
         return False
 
-    # Direct internal secure pipeline setup
     client = InferenceClient(provider="hf-inference", token=token)
+    
+    # Realistic gaming engine instructions
+    realistic_prompt = f"{prompt}, ultra-realistic 3D gaming render, cinematic lighting, photorealistic gaming poster, highly detailed, masterpiece, 8k"
     
     max_retries = 3
     for attempt in range(max_retries):
         print(f"Hugging Face SDK Client se image nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            # Super fast turbo model jo 2-3 seconds mein high-quality image deta hai
             image = client.text_to_image(
-                prompt=f"{prompt}, dynamic 3d gaming action render, vibrant colors, masterpiece, 4k",
+                prompt=realistic_prompt,
                 model="Lykon/dreamshaper-xl-v2-turbo"
             )
             image.save("reel_temp.jpg")
             
-            # Auto-resize for HD Standard
             img = Image.open("reel_temp.jpg")
             img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
             img.save("reel_temp.jpg")
             
-            print("✅ Pure AI Image successfully generated!")
+            print("✅ Pure Realistic AI Image successfully generated!")
             return True
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
-            time.sleep(5)
+            if "429" in str(e):
+                print("⏳ Server busy (429)! 15 seconds ka heavy break le rahe hain...")
+                time.sleep(15)
+            else:
+                time.sleep(5)
     return False
 
 def create_and_upload_reel():
@@ -72,12 +75,11 @@ def create_and_upload_reel():
     
     print(f"🎨 Target Topic: {topic}")
     
-    # Strict rule: Agar AI image nahi bani toh upload cancel, koi ghatiya template nahi chalega
     if not generate_pure_ai_image(topic):
         print("🛑 UPLOAD CANCELLED: AI Image nahi bani. Strict Rule enforced.")
         return
 
-    print("🎬 Rendering 15s HD Reel...")
+    print("🎬 Rendering 15s HD Reel using MoviePy...")
     bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
