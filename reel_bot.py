@@ -24,7 +24,7 @@ def get_topic():
         return topic
     except Exception as e:
         print(f"Topic Error: {e}")
-        return "M762 Beryl vs AKM"
+        return "Flying an Oppressor Mk II vs Driving a Supercar: GTA Online?"
 
 def get_random_music():
     music_folder = "music"
@@ -32,21 +32,31 @@ def get_random_music():
         files = [f for f in os.listdir(music_folder) if f.endswith(".mp3")]
         if files:
             return os.path.join(music_folder, random.choice(files))
+    print("⚠️ Music folder ya files nahi mili.")
     return None
 
 def generate_pure_ai_image(prompt):
-    # 🔥 Pollinations ka Ultra-Stable Flux Engine (No Auth Required, Highly Whitelisted Network)
     encoded_prompt = urllib.parse.quote(prompt)
-    API_URL = f"https://image.pollinations.ai/p/{encoded_prompt}?width=1080&height=1080&model=flux&enhance=true"
+    # 🔥 LIGHTWEIGHT TURBO ENGINE: Is endpoint par 402/payment errors nahi aate hain
+    API_URL = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&nologo=true"
     
     max_retries = 3
     for attempt in range(max_retries):
-        print(f"Pollinations AI (Flux Engine) se image nikal rahe hain (Attempt {attempt + 1}/3)...")
+        unique_seed = int(time.time()) + random.randint(1, 1000)
+        seeded_url = f"{API_URL}&seed={unique_seed}"
+        
+        print(f"Pollinations AI (Turbo Engine) se image nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            response = requests.get(API_URL, timeout=40)
-            if response.status_code == 200 and len(response.content) > 5000:
+            response = requests.get(seeded_url, timeout=30)
+            if response.status_code == 200 and 'image' in response.headers.get('Content-Type', ''):
                 with open("reel_temp.jpg", "wb") as f:
                     f.write(response.content)
+                
+                # Image ko verify aur resize karne ke liye
+                img = Image.open("reel_temp.jpg")
+                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+                img.save("reel_temp.jpg")
+                
                 print("✅ Premium AI Image successfully generated!")
                 return True
             else:
@@ -64,7 +74,8 @@ def create_and_upload_reel():
     print(f"🎨 Target Topic: {topic}")
     
     # STRICTION: Agar AI image nahi bani, toh seedha cancel, koi fallback nahi!
-    if not generate_pure_ai_image(f"{topic}, realistic 3D gaming concept, 8k resolution, cinematic lighting"):
+    visual_prompt = f"{topic}, split-screen comparison layout, dynamic two different gaming sides, bright cinematic lighting, 3d rendering style, masterpiece"
+    if not generate_pure_ai_image(visual_prompt):
         print("🛑 UPLOAD CANCELLED: Pure AI Image nahi ban payi. Strict Rule enforced.")
         return
 
@@ -89,13 +100,27 @@ def create_and_upload_reel():
     # FACEBOOK UPLOAD
     page_id = '318640404662743'
     system_token = os.environ.get('FB_TOKEN')
+    
+    token_url = f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}"
     try:
-        page_token = requests.get(f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}").json().get('access_token')
-        if page_token:
-            print("🚀 Uploading to Facebook...")
-            with open("final_reel.mp4", 'rb') as video_file:
-                r = requests.post(f"https://graph-video.facebook.com/{page_id}/videos", data={'description': caption, 'title': 'Gaming Reels', 'access_token': page_token}, files={'source': video_file})
-                print(f"Upload Response: {r.json()}")
+        token_response = requests.get(token_url).json()
+        if 'access_token' in token_response:
+            page_token = token_response['access_token']
+        else:
+            print(f"❌ Token Error: {token_response}")
+            return
+            
+        url = f"https://graph-video.facebook.com/{page_id}/videos"
+        with open("final_reel.mp4", 'rb') as video_file:
+            files = {'source': video_file}
+            payload = {
+                'description': caption, 
+                'title': 'Gaming Reels',
+                'access_token': page_token
+            }
+            print("🚀 Uploading Reel to Facebook...")
+            r = requests.post(url, data=payload, files=files)
+            print(f"Upload Response: {r.json()}")
     except Exception as e:
         print(f"❌ Upload Error: {e}")
 
