@@ -23,17 +23,17 @@ def generate_pure_ai_image(prompt):
 
     client = InferenceClient(provider="hf-inference", token=token)
     
-    # Realistic gaming image instructions
-    realistic_prompt = f"{prompt}, realistic gaming setup action screenshot, photorealistic, 4k cinematic lighting, highly detailed"
+    realistic_prompt = f"mdjrny-v4 style, {prompt}, realistic gaming setup action screenshot, photorealistic, 4k cinematic lighting, highly detailed"
     
     max_retries = 3
+    delay = 20 # Shuruwaati break
+    
     for attempt in range(max_retries):
         print(f"Hugging Face SDK Client se photo nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
             image = client.text_to_image(
                 prompt=realistic_prompt,
-                # 🔥 NAYA, 100% SUPPORTED AUR POWERFUL MODEL
-                model="stabilityai/stable-diffusion-xl-base-1.0"
+                model="prompthero/openjourney"
             )
             image.save("photo_temp.jpg")
             
@@ -46,8 +46,9 @@ def generate_pure_ai_image(prompt):
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
             if "429" in str(e):
-                print("⏳ Server busy (429)! 15 seconds ka break...")
-                time.sleep(15)
+                print(f"⏳ Server busy (429)! {delay} seconds ka break...")
+                time.sleep(delay)
+                delay = delay * 2 # Agli baar delay double ho jayega
             else:
                 time.sleep(5)
     return False
@@ -81,7 +82,6 @@ def post_to_facebook():
     
     if live_news and choice == 'news': chosen_topic = f"Breaking Gaming News: {live_news}"
     else:
-        # 🔥 AAPKE SAARE PURANE TOPICS WAPAS HAIN
         topics = [
             "BGMI random teammates doing stupid things",
             "Landing at Pochinki and getting no gun in BGMI",
