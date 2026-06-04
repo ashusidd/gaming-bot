@@ -1,121 +1,94 @@
+import sys
+import subprocess
 import os
 import json
 import random
 import time
 import textwrap
 import requests
-from PIL import Image
-from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
 
+# --- AUTO-INSTALLER (Dependecy error nahi aayega) ---
+def install(package):
+    print(f"Installing {package}...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+try:
+    from PIL import Image
+    from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
+except ImportError:
+    install("pillow")
+    install("moviepy")
+    from PIL import Image
+    from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
+
+# --- BOT LOGIC ---
 def get_topic():
     try:
         with open("topics.json", "r+") as f:
             data = json.load(f)
-            remaining = [t for t in data["all_topics"] if t not in data["used_topics"]]
+            remaining = [t for t in data["all_topics"] if t not in data.get("used_topics", [])]
             if not remaining:
                 data["used_topics"] = []
                 remaining = data["all_topics"]
             topic = random.choice(remaining)
-            data["used_topics"].append(topic)
+            data["used_topics"] = data.get("used_topics", []) + [topic]
             f.seek(0)
             json.dump(data, f, indent=4)
             f.truncate()
-        return topic
-    except Exception as e:
-        print(f"Topic Error: {e}")
-        return "Aggressive Rusher vs Tactical Camper: Your playstyle?"
+            return topic
+    except:
+        return "Pro Gaming Moments"
 
 def get_random_music():
     music_folder = "music"
-    if os.path.exists(music_folder) and os.listdir(music_folder):
+    if os.path.exists(music_folder):
         files = [f for f in os.listdir(music_folder) if f.endswith(".mp3")]
         if files: return os.path.join(music_folder, random.choice(files))
     return None
 
-def generate_pure_ai_image(prompt):
-    token = os.environ.get('HF_TOKEN')
-    if not token:
-        print("❌ ERROR: HF_TOKEN GitHub secrets mein nahi mila!")
+def generate_image(prompt):
+    print(f"🚀 Generating AI Image for: {prompt}")
+    safe_prompt = prompt.replace(" ", "%20")
+    # Pollinations AI: Fast, Free, No Token Needed
+    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={random.randint(1,9999)}"
+    try:
+        response = requests.get(url, timeout=60)
+        if response.status_code == 200:
+            with open("reel_temp.jpg", "wb") as f: f.write(response.content)
+            return True
+    except Exception as e:
+        print(f"❌ Error: {e}")
         return False
-
-    # Sabse stable aur fast model use kar rahe hain
-    API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    realistic_prompt = f"masterpiece, highly detailed, {prompt}, ultra-realistic 3D gaming render, cinematic lighting, 4k"
-    
-    # 5 attempts ka loop, taaki server wakeup time handle ho sake
-    for attempt in range(5):
-        print(f"🚀 Direct API (Hugging Face) se image nikal rahe hain (Attempt {attempt + 1}/5)...")
-        try:
-            response = requests.post(API_URL, headers=headers, json={"inputs": realistic_prompt}, timeout=60)
-            
-            if response.status_code == 200:
-                with open("reel_temp.jpg", "wb") as f:
-                    f.write(response.content)
-                
-                img = Image.open("reel_temp.jpg")
-                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
-                img.save("reel_temp.jpg")
-                
-                print("✅ Direct API se Ultra-HD AI Image ban gayi!")
-                return True
-            
-            elif response.status_code == 503:
-                # Agar model sleep mode mein hai, toh API khud batati hai kitna wait karna hai
-                error_data = response.json()
-                wait_time = error_data.get('estimated_time', 20)
-                print(f"⏳ AI Model load ho raha hai. {wait_time} seconds wait kar rahe hain...")
-                time.sleep(wait_time + 2) # Thoda extra buffer
-            else:
-                print(f"❌ API Error {response.status_code}: {response.text}")
-                time.sleep(10)
-                
-        except Exception as e:
-            print(f"❌ Connection Error: {e}")
-            time.sleep(10)
-            
-    return False
 
 def create_and_upload_reel():
     topic = get_topic()
-    caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
+    caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#ErAshuGaming #GamingLife"
     
-    print(f"🎨 Target Topic: {topic}")
-    
-    if not generate_pure_ai_image(topic):
-        print("🛑 UPLOAD CANCELLED: AI Image nahi bani. Strict Rule enforced.")
-        return
+    if not generate_image(topic): return
 
-    print("🎬 Rendering 15s HD Reel using MoviePy...")
-    bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
-    img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
+    print("🎬 Rendering Reel...")
+    bg = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
+    img = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
-    wrapped_topic = textwrap.fill(topic.upper(), width=20)
-    topic_clip = TextClip(wrapped_topic, fontsize=85, color='white', font='Arial-Bold', align='center').set_position(('center', 120)).set_duration(15) 
-    vote_clip = TextClip("COMMENT YOUR VOTE", fontsize=80, color='white', font='Arial-Bold', align='center').set_position(('center', 1580)).set_duration(15) 
-    watermark = TextClip("ER ASHU GAMING", fontsize=35, color='gray', font='Arial-Bold').set_position(('center', 1800)).set_duration(15)
+    txt = TextClip(textwrap.fill(topic.upper(), 20), fontsize=85, color='white', font='Arial-Bold', align='center').set_position(('center', 150)).set_duration(15)
+    wm = TextClip("ER ASHU GAMING", fontsize=40, color='gray').set_position(('center', 1800)).set_duration(15)
     
-    video = CompositeVideoClip([bg_clip, img_clip, topic_clip, vote_clip, watermark])
-
-    music_file = get_random_music()
-    if music_file:
-        audio = AudioFileClip(music_file).subclip(0, 15)
+    video = CompositeVideoClip([bg, img, txt, wm])
+    
+    music = get_random_music()
+    if music:
+        audio = AudioFileClip(music).subclip(0, 15)
         video = video.set_audio(audio)
 
     video.write_videofile("final_reel.mp4", fps=24, codec='libx264', audio_codec='aac')
 
+    # Upload
     page_id = '318640404662743'
-    system_token = os.environ.get('FB_TOKEN')
-    try:
-        page_token = requests.get(f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}").json().get('access_token')
-        if page_token:
-            print("🚀 Uploading Reel to Facebook...")
-            with open("final_reel.mp4", 'rb') as video_file:
-                r = requests.post(f"https://graph-video.facebook.com/{page_id}/videos", data={'description': caption, 'title': 'Gaming Reels', 'access_token': page_token}, files={'source': video_file})
-                print(f"Facebook Response: {r.json()}")
-    except Exception as e:
-        print(f"❌ Upload Error: {e}")
+    token = os.environ.get('FB_TOKEN')
+    with open("final_reel.mp4", 'rb') as f:
+        r = requests.post(f"https://graph-video.facebook.com/{page_id}/videos", 
+                          data={'description': caption, 'access_token': token}, files={'source': f})
+        print(f"✅ Response: {r.json()}")
 
 if __name__ == "__main__":
     create_and_upload_reel()
