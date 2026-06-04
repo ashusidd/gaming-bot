@@ -26,14 +26,14 @@ def generate_pure_ai_image(prompt):
     realistic_prompt = f"mdjrny-v4 style, {prompt}, realistic gaming setup action screenshot, photorealistic, 4k cinematic lighting, highly detailed"
     
     max_retries = 3
-    delay = 20 # Shuruwaati break
+    delay = 20
     
     for attempt in range(max_retries):
         print(f"Hugging Face SDK Client se photo nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
+            # 🔥 MAGIC FIX: No hardcoded model here either.
             image = client.text_to_image(
-                prompt=realistic_prompt,
-                model="prompthero/openjourney"
+                prompt=realistic_prompt
             )
             image.save("photo_temp.jpg")
             
@@ -45,10 +45,11 @@ def generate_pure_ai_image(prompt):
             return True
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
-            if "429" in str(e):
-                print(f"⏳ Server busy (429)! {delay} seconds ka break...")
+            # 🔥 STRICT FIX: Exact matching for the error
+            if "429 Too Many Requests" in str(e):
+                print(f"⏳ Server busy! {delay} seconds ka break...")
                 time.sleep(delay)
-                delay = delay * 2 # Agli baar delay double ho jayega
+                delay = delay * 2
             else:
                 time.sleep(5)
     return False
