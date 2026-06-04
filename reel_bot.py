@@ -41,17 +41,19 @@ def generate_pure_ai_image(prompt):
 
     client = InferenceClient(provider="hf-inference", token=token)
     
-    # Realistic gaming engine instructions
-    realistic_prompt = f"{prompt}, ultra-realistic 3D gaming render, cinematic lighting, photorealistic gaming poster, highly detailed, masterpiece, 8k"
+    # 'mdjrny-v4 style' lagane se openjourney model ekdum cinematic output deta hai
+    realistic_prompt = f"mdjrny-v4 style, {prompt}, ultra-realistic 3D gaming render, cinematic lighting, masterpiece, 4k"
     
     max_retries = 3
+    delay = 20 # Shuruwaati break
+    
     for attempt in range(max_retries):
         print(f"Hugging Face SDK Client se image nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
             image = client.text_to_image(
                 prompt=realistic_prompt,
-                # 🔥 NAYA, 100% SUPPORTED AUR POWERFUL MODEL
-                model="stabilityai/stable-diffusion-xl-base-1.0"
+                # 🔥 Light aur super fast model jo kam rate-limit hota hai
+                model="prompthero/openjourney"
             )
             image.save("reel_temp.jpg")
             
@@ -64,8 +66,9 @@ def generate_pure_ai_image(prompt):
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
             if "429" in str(e):
-                print("⏳ Server busy (429)! 15 seconds ka heavy break le rahe hain...")
-                time.sleep(15)
+                print(f"⏳ Server busy (429)! {delay} seconds ka smart break le rahe hain...")
+                time.sleep(delay)
+                delay = delay * 2 # Agli baar delay double ho jayega
             else:
                 time.sleep(5)
     return False
