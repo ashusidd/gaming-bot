@@ -34,14 +34,12 @@ def get_random_music():
     return None
 
 def generate_pure_ai_image(prompt):
-    # Prompt ko aur bhi realistic banaya gaya hai
     realistic_prompt = f"mdjrny-v4 style, {prompt}, ultra-realistic 3D gaming render, cinematic lighting, masterpiece, 4k"
-    
-    # Text ko link format mein badalna
     safe_prompt = urllib.parse.quote(realistic_prompt)
     
-    # Direct image generation link bina kisi API token ke
-    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true"
+    # 🔥 FIX: Random seed add kiya aur nologo=true HATA DIYA taaki 402 Error (Payment Required) na aaye.
+    seed = random.randint(1, 1000000)
+    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}"
     
     max_retries = 3
     for attempt in range(max_retries):
@@ -49,6 +47,7 @@ def generate_pure_ai_image(prompt):
         try:
             response = requests.get(url, timeout=40)
             
+            # Agar success hai (200 OK) toh image save karo
             if response.status_code == 200:
                 with open("reel_temp.jpg", "wb") as f:
                     f.write(response.content)
@@ -60,7 +59,7 @@ def generate_pure_ai_image(prompt):
                 print("✅ Pure Realistic AI Image successfully generated!")
                 return True
             else:
-                print(f"❌ Server Error: {response.status_code}")
+                print(f"❌ Server Error: HTTP {response.status_code}")
                 time.sleep(5)
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
@@ -110,4 +109,4 @@ def create_and_upload_reel():
 
 if __name__ == "__main__":
     create_and_upload_reel()
-            
+    
