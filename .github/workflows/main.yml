@@ -28,7 +28,6 @@ jobs:
       with:
         python-version: '3.10'
 
-    # 🔥 FIX: Yahan humne moviepy==1.0.3 lagaya hai (Version Pinning)
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
@@ -36,9 +35,9 @@ jobs:
 
     - name: Run Appropriate Bot
       env:
+        # 🔥 CLEAN SETUP: Ab yahan sirf wahi 2 keys hain jo code ko chahiye
         FB_TOKEN: ${{ secrets.FB_TOKEN }}
         GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         current_cron="${{ github.event.schedule }}"
         
@@ -57,5 +56,5 @@ jobs:
         git add topics.json
         git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update used topics"
         git pull --rebase origin main
-        git push
+        git push origin main
         
