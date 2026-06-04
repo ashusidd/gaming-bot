@@ -49,9 +49,10 @@ def generate_pure_ai_image(prompt):
     for attempt in range(max_retries):
         print(f"Hugging Face SDK Client se image nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            # 🔥 MAGIC FIX: Model ka naam hata diya. SDK auto-route karega working model par.
+            # 🔥 THE TANK MODEL: Sabse stable aur halka model
             image = client.text_to_image(
-                prompt=realistic_prompt
+                prompt=realistic_prompt,
+                model="runwayml/stable-diffusion-v1-5"
             )
             image.save("reel_temp.jpg")
             
@@ -63,11 +64,10 @@ def generate_pure_ai_image(prompt):
             return True
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
-            # 🔥 STRICT FIX: Ab random ID ko nahi, sirf exact rate limit ko pakdega
             if "429 Too Many Requests" in str(e):
                 print(f"⏳ Server busy! {delay} seconds ka smart break le rahe hain...")
                 time.sleep(delay)
-                delay = delay * 2
+                delay = delay * 2  # Exponential backoff
             else:
                 time.sleep(5)
     return False
