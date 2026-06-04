@@ -4,35 +4,41 @@ import random
 import urllib.parse
 from PIL import Image, ImageDraw, ImageFont
 import time
+from huggingface_hub import InferenceClient
 
 def get_live_news():
     try:
         rss_url = "https://www.reddit.com/r/gamingnews/.rss"
         api_url = f"https://api.rss2json.com/v1/api.json?rss_url={urllib.parse.quote(rss_url)}"
         r = requests.get(api_url, timeout=10)
-        if r.status_code == 200:
-            return r.json()['items'][0]['title']
+        if r.status_code == 200: return r.json()['items'][0]['title']
         return None
-    except:
-        return None
+    except: return None
 
 def generate_pure_ai_image(prompt):
-    encoded_prompt = urllib.parse.quote(prompt)
-    # 🔥 UNLIMITED FREE ENDPOINT FOR PHOTOS TOO
-    API_URL = f"https://v1.ai.pollinations.ai/p/{encoded_prompt}?width=1080&height=1080&model=searchglow"
+    token = os.environ.get('HF_TOKEN')
+    if not token:
+        print("❌ ERROR: HF_TOKEN missing!")
+        return False
+
+    client = InferenceClient(provider="hf-inference", token=token)
     
     max_retries = 3
     for attempt in range(max_retries):
-        print(f"Free API se photo nikal rahe hain (Attempt {attempt + 1}/3)...")
+        print(f"Hugging Face SDK Client se photo nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            response = requests.get(API_URL, timeout=30)
-            if response.status_code == 200:
-                with open("photo_temp.jpg", "wb") as f:
-                    f.write(response.content)
-                print("✅ Pure AI Photo successfully generated!")
-                return True
-            else:
-                time.sleep(5)
+            image = client.text_to_image(
+                prompt=f"{prompt}, in-game action gaming screenshot, high quality cinematic wallpaper, 4k",
+                model="Lykon/dreamshaper-xl-v2-turbo"
+            )
+            image.save("photo_temp.jpg")
+            
+            img = Image.open("photo_temp.jpg")
+            img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+            img.save("photo_temp.jpg")
+            
+            print("✅ Pure AI Photo successfully generated!")
+            return True
         except:
             time.sleep(5)
     return False
@@ -64,8 +70,7 @@ def post_to_facebook():
     live_news = get_live_news()
     choice = random.choices(['news', 'topic'], weights=[25, 75], k=1)[0]
     
-    if live_news and choice == 'news':
-        chosen_topic = f"Breaking Gaming News: {live_news}"
+    if live_news and choice == 'news': chosen_topic = f"Breaking Gaming News: {live_news}"
     else:
         topics = [
             "BGMI random teammates doing stupid things",
@@ -74,8 +79,7 @@ def post_to_facebook():
             "When your Ping goes to 999ms during a 1v4 clutch",
             "Trying to hit a perfect one-tap headshot in Free Fire",
             "Rank push struggles in Free Fire Heroic tier",
-            "When script goes against you in FC Mobile H2H match",
-            "Waiting for GTA 6 to release so we can finally rest"
+            "When script goes against you in FC Mobile H2H match"
         ]
         chosen_topic = random.choice(topics)
 
@@ -88,8 +92,8 @@ def post_to_facebook():
     except:
         caption = f"Kya bolte ho lala? {chosen_topic} 😂🔥\n\n#EngineersGamer"
 
-    if not generate_pure_ai_image(f"{chosen_topic}, in-game gaming poster, high quality wallpaper, 4k"):
-        print("🛑 UPLOAD CANCELLED: AI Image nahi bani. No Fallback rule.")
+    if not generate_pure_ai_image(chosen_topic):
+        print("🛑 UPLOAD CANCELLED: AI Image nahi bani. Strict Rule enforced.")
         return
 
     watermarked_image = add_watermark("photo_temp.jpg")
