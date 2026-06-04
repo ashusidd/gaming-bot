@@ -23,12 +23,15 @@ def generate_pure_ai_image(prompt):
 
     client = InferenceClient(provider="hf-inference", token=token)
     
+    # Realistic gaming image instructions
+    realistic_prompt = f"{prompt}, realistic gaming setup action screenshot, photorealistic, 4k cinematic lighting, highly detailed"
+    
     max_retries = 3
     for attempt in range(max_retries):
         print(f"Hugging Face SDK Client se photo nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
             image = client.text_to_image(
-                prompt=f"{prompt}, in-game action gaming screenshot, high quality cinematic wallpaper, 4k",
+                prompt=realistic_prompt,
                 model="Lykon/dreamshaper-xl-v2-turbo"
             )
             image.save("photo_temp.jpg")
@@ -37,10 +40,15 @@ def generate_pure_ai_image(prompt):
             img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
             img.save("photo_temp.jpg")
             
-            print("✅ Pure AI Photo successfully generated!")
+            print("✅ Pure Realistic AI Photo successfully generated!")
             return True
-        except:
-            time.sleep(5)
+        except Exception as e:
+            print(f"❌ Error on attempt {attempt + 1}: {e}")
+            if "429" in str(e):
+                print("⏳ Server busy (429)! 15 seconds ka break...")
+                time.sleep(15)
+            else:
+                time.sleep(5)
     return False
 
 def add_watermark(image_path):
@@ -72,14 +80,16 @@ def post_to_facebook():
     
     if live_news and choice == 'news': chosen_topic = f"Breaking Gaming News: {live_news}"
     else:
+        # 🔥 AAPKE SAARE PURANE TOPICS WAPAS ADD KAR DIYE HAIN
         topics = [
             "BGMI random teammates doing stupid things",
             "Landing at Pochinki and getting no gun in BGMI",
-            "The feeling of getting a Chicken Dinner after a losing streak",
+            "The feeling of getting a Chicken Dinner after a 10-match losing streak",
             "When your Ping goes to 999ms during a 1v4 clutch",
             "Trying to hit a perfect one-tap headshot in Free Fire",
             "Rank push struggles in Free Fire Heroic tier",
-            "When script goes against you in FC Mobile H2H match"
+            "When script goes against you in FC Mobile H2H match",
+            "Waiting for GTA 6 to release so we can finally rest"
         ]
         chosen_topic = random.choice(topics)
 
@@ -103,6 +113,7 @@ def post_to_facebook():
     try:
         page_token = requests.get(f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}").json().get('access_token')
         if page_token:
+            print("✅ Facebook par photo upload ho rahi hai...")
             with open(watermarked_image, 'rb') as img_file:
                 requests.post(f"https://graph.facebook.com/{page_id}/photos", data={'message': caption, 'access_token': page_token}, files={'source': img_file})
                 print("✅ Uploaded to Facebook!")
