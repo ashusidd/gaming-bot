@@ -16,9 +16,11 @@ def get_live_news():
 
 def generate_pure_ai_image(prompt):
     realistic_prompt = f"mdjrny-v4 style, {prompt}, realistic gaming setup action screenshot, photorealistic, 4k cinematic lighting, highly detailed"
-    
     safe_prompt = urllib.parse.quote(realistic_prompt)
-    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true"
+    
+    # 🔥 FIX: Random seed add kiya aur nologo=true HATA DIYA taaki 402 Error na aaye.
+    seed = random.randint(1, 1000000)
+    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}"
     
     max_retries = 3
     for attempt in range(max_retries):
@@ -37,7 +39,7 @@ def generate_pure_ai_image(prompt):
                 print("✅ Pure Realistic AI Photo successfully generated!")
                 return True
             else:
-                print(f"❌ Server Error: {response.status_code}")
+                print(f"❌ Server Error: HTTP {response.status_code}")
                 time.sleep(5)
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
@@ -115,4 +117,4 @@ def post_to_facebook():
 
 if __name__ == "__main__":
     post_to_facebook()
-    
+        
