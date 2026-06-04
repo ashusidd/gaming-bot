@@ -1,11 +1,12 @@
-import requests
 import os
-import random
 import json
+import random
 import time
-import urllib.parse
 import textwrap
+import requests
 from PIL import Image
+# 🔥 Official Hugging Face SDK jo DNS errors ko bypass karta hai
+from huggingface_hub import InferenceClient
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
 
 def get_topic():
@@ -18,11 +19,13 @@ def get_topic():
                 remaining = data["all_topics"]
             topic = random.choice(remaining)
             data["used_topics"].append(topic)
-            f.seek(0); json.dump(data, f, indent=4); f.truncate()
+            f.seek(0)
+            json.dump(data, f, indent=4)
+            f.truncate()
         return topic
     except Exception as e:
         print(f"Topic Error: {e}")
-        return "M762 Beryl vs AKM"
+        return "Discord Voice Chat vs In-Game Voice Chat: Better comms?"
 
 def get_random_music():
     music_folder = "music"
@@ -32,25 +35,34 @@ def get_random_music():
     return None
 
 def generate_pure_ai_image(prompt):
-    encoded_prompt = urllib.parse.quote(prompt)
-    # 🔥 NEW ENDPOINT: Yeh completely free hai aur bina rate limit ke chalta hai
-    API_URL = f"https://v1.ai.pollinations.ai/p/{encoded_prompt}?width=1080&height=1080&model=searchglow"
+    token = os.environ.get('HF_TOKEN')
+    if not token:
+        print("❌ ERROR: HF_TOKEN nahi mila!")
+        return False
+
+    # Direct internal secure pipeline setup
+    client = InferenceClient(provider="hf-inference", token=token)
     
     max_retries = 3
     for attempt in range(max_retries):
-        print(f"Free API se image nikal rahe hain (Attempt {attempt + 1}/3)...")
+        print(f"Hugging Face SDK Client se image nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            response = requests.get(API_URL, timeout=30)
-            if response.status_code == 200:
-                with open("reel_temp.jpg", "wb") as f:
-                    f.write(response.content)
-                print("✅ Pure AI Image successfully generated!")
-                return True
-            else:
-                print(f"⚠️ Status Code: {response.status_code}. Retrying...")
-                time.sleep(5)
+            # Super fast turbo model jo 2-3 seconds mein high-quality image deta hai
+            image = client.text_to_image(
+                prompt=f"{prompt}, dynamic 3d gaming action render, vibrant colors, masterpiece, 4k",
+                model="Lykon/dreamshaper-xl-v2-turbo"
+            )
+            image.save("reel_temp.jpg")
+            
+            # Auto-resize for HD Standard
+            img = Image.open("reel_temp.jpg")
+            img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+            img.save("reel_temp.jpg")
+            
+            print("✅ Pure AI Image successfully generated!")
+            return True
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error on attempt {attempt + 1}: {e}")
             time.sleep(5)
     return False
 
@@ -58,10 +70,14 @@ def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
     
-    if not generate_pure_ai_image(f"{topic}, dynamic gaming action 3d render, vibrant style, 4k"):
-        print("🛑 UPLOAD CANCELLED: AI Image nahi bani. No Fallback rule.")
+    print(f"🎨 Target Topic: {topic}")
+    
+    # Strict rule: Agar AI image nahi bani toh upload cancel, koi ghatiya template nahi chalega
+    if not generate_pure_ai_image(topic):
+        print("🛑 UPLOAD CANCELLED: AI Image nahi bani. Strict Rule enforced.")
         return
 
+    print("🎬 Rendering 15s HD Reel...")
     bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
@@ -84,6 +100,7 @@ def create_and_upload_reel():
     try:
         page_token = requests.get(f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}").json().get('access_token')
         if page_token:
+            print("🚀 Uploading Reel to Facebook...")
             with open("final_reel.mp4", 'rb') as video_file:
                 r = requests.post(f"https://graph-video.facebook.com/{page_id}/videos", data={'description': caption, 'title': 'Gaming Reels', 'access_token': page_token}, files={'source': video_file})
                 print(f"Facebook Response: {r.json()}")
