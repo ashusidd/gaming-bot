@@ -14,7 +14,7 @@ on:
 
 jobs:
   post_content:
-    runs-on: self-hosted  # Ab ye aapke PC par chalega!
+    runs-on: self-hosted  # Yeh aapke local PC ke liye hai
 
     steps:
     - name: Checkout Repository
@@ -24,10 +24,16 @@ jobs:
       env:
         FB_TOKEN: ${{ secrets.FB_TOKEN }}
         GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      shell: powershell
       run: |
-        # Yeh aapke PC par file check karega
-        if [ "${{ github.event.schedule }}" = "30 8 * * *" ] || [ "${{ github.event.schedule }}" = "30 15 * * *" ]; then
-          python reel_bot.py
-        else
-          python final_bot.py
-        fi
+        $current_cron = "${{ github.event.schedule }}"
+        Write-Host "Current Schedule trigger is: $current_cron"
+        
+        # Check agar yeh Reel ka time hai ya manual trigger hai
+        if ($current_cron -eq "30 8 * * *" -or $current_cron -eq "30 15 * * *" -or "${{ github.event_name }}" -eq "workflow_dispatch") {
+            Write-Host "🎬 Target Matched: Running REEL Bot..."
+            python reel_bot.py
+        } else {
+            Write-Host "📸 Target Matched: Running PHOTO Bot..."
+            python final_bot.py
+        }
