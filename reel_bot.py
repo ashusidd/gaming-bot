@@ -5,7 +5,7 @@ import json
 import time
 import urllib.parse
 import textwrap
-from PIL import Image
+from PIL import Image, ImageDraw  # Naya ImageDraw import kiya hai
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
 
 def get_topic():
@@ -24,7 +24,7 @@ def get_topic():
         return topic
     except Exception as e:
         print(f"Topic Error: {e}")
-        return "Building a Dirt House vs Digging a Cave"
+        return "Mechanical Keyboard vs Membrane Keyboard"
 
 def get_random_music():
     music_folder = "music"
@@ -35,6 +35,24 @@ def get_random_music():
     print("⚠️ Music folder ya files nahi mili.")
     return None
 
+# 🔥 NAYA BLUEPRINT: Local Fallback Image Banane Ka Function
+def generate_local_vs_background():
+    print("🎨 AI Server down hai! Local VS Split Background generate kar rahe hain...")
+    # 1080x1080 ka ek naya blank image canvas banaya
+    img = Image.new("RGB", (1080, 1080), color=(0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    
+    # Left Half: Gaming Crimson Red (X: 0 se 540)
+    draw.rectangle([0, 0, 540, 1080], fill=(160, 20, 30))
+    
+    # Right Half: Gaming Deep Blue (X: 540 se 1080)
+    draw.rectangle([540, 0, 1080, 1080], fill=(20, 50, 160))
+    
+    # Center Line: Dono ke beech ek patli black line border ke liye
+    draw.line([(540, 0), (540, 1080)], fill=(0, 0, 0), width=10)
+    
+    img.save("reel_temp.jpg")
+
 def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
@@ -43,14 +61,12 @@ def create_and_upload_reel():
     
     visual_styles = [
         "split-screen comparison layout, two different gaming worlds side by side, 'choose your path' concept, a gamer standing in the middle deciding, vibrant 3D cartoonish style",
-        "interactive social media poll format, horizontal split screen, bright and colorful gaming assets, stylized 3D render like Free Fire posters",
-        "epic versus battle concept art, red vs blue neon lighting, divided screen, highly detailed 3D animated character style"
+        "interactive social media poll format, horizontal split screen, bright and colorful gaming assets, stylized 3D render like Free Fire posters"
     ]
     random_style = random.choice(visual_styles)
     visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
     safe_prompt = urllib.parse.quote(visual_prompt)
     
-    # 🔥 THE FIX: RETRY MECHANISM (3 Attempts)
     image_downloaded = False
     max_retries = 3
     
@@ -63,35 +79,32 @@ def create_and_upload_reel():
             r = requests.get(img_url, timeout=20)
             
             if r.status_code == 200 and 'image' in r.headers.get('Content-Type', ''):
-                # Agar image sahi mil gayi, toh save karo aur loop se bahar nikal jao
                 with open("reel_temp.jpg", "wb") as f: 
                     f.write(r.content)
                 img = Image.open("reel_temp.jpg")
                 img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
                 img.save("reel_temp.jpg")
                 image_downloaded = True
-                print("✅ Image successfully downloaded!")
-                break # Loop khatam
+                print("✅ Image successfully downloaded from AI!")
+                break
             else:
-                print(f"⚠️ Attempt {attempt + 1} Failed! Status Code: {r.status_code}. Retrying in 5 seconds...")
-                time.sleep(5) # 5 second ruko aur dobara try karo
+                print(f"⚠️ Attempt {attempt + 1} Failed! Status Code: {r.status_code}. Retrying...")
+                time.sleep(3)
                 
         except Exception as e:
             print(f"❌ Network Error in Attempt {attempt + 1}: {e}")
-            time.sleep(5)
+            time.sleep(3)
 
-    # Agar 3 baar try karne ke baad bhi fail ho gaya
+    # 🔥 SMART SWITCH: Agar AI fail ho gaya, toh local function call karo
     if not image_downloaded:
-        print("🛑 CRASH PREVENTED: 3 attempts ke baad bhi AI server ne photo nahi di. Exiting safely...")
-        return
+        generate_local_vs_background()
 
-    # --- BAAKI REEL RENDERING KA CODE SAME HAI ---
     print("🎬 Rendering 15s HD Reel...")
     
     bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
-    wrapped_topic = textwrap.fill(topic, width=20)
+    wrapped_topic = textwrap.fill(topic.upper(), width=20) # .upper() lagaya taaki capitalized BOLD dikhe
     topic_clip = TextClip(
         wrapped_topic, 
         fontsize=85, 
