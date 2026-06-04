@@ -40,7 +40,6 @@ def create_and_upload_reel():
     caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
     
     print(f"🎨 Image Generate ho rahi hai (COMPARISON STYLE): {topic}")
-    seed = int(time.time()) + random.randint(1, 1000)
     
     visual_styles = [
         "split-screen comparison layout, two different gaming worlds side by side, 'choose your path' concept, a gamer standing in the middle deciding, vibrant 3D cartoonish style",
@@ -48,38 +47,48 @@ def create_and_upload_reel():
         "epic versus battle concept art, red vs blue neon lighting, divided screen, highly detailed 3D animated character style"
     ]
     random_style = random.choice(visual_styles)
-    
     visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
     safe_prompt = urllib.parse.quote(visual_prompt)
     
-    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
+    # 🔥 THE FIX: RETRY MECHANISM (3 Attempts)
+    image_downloaded = False
+    max_retries = 3
     
-    # 🔥 THE FIX: Yahan humne Safety Check lagaya hai
-    try:
-        print("Image API ko request bhej rahe hain...")
-        r = requests.get(img_url, timeout=20)
+    for attempt in range(max_retries):
+        seed = int(time.time()) + random.randint(1, 1000)
+        img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
         
-        # Check if the server actually sent an image and not an error text
-        if r.status_code != 200 or 'image' not in r.headers.get('Content-Type', ''):
-            print(f"🛑 CRASH PREVENTED: AI ne valid image nahi di. Status Code: {r.status_code}")
-            print("Agli baar cron job try karega. Exiting safely...")
-            return  # Yahan se program chupchap ruk jayega, crash nahi hoga!
+        print(f"Image API ko request bhej rahe hain (Attempt {attempt + 1}/{max_retries})...")
+        try:
+            r = requests.get(img_url, timeout=20)
             
-        with open("reel_temp.jpg", "wb") as f: 
-            f.write(r.content)
-            
-        img = Image.open("reel_temp.jpg")
-        img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
-        img.save("reel_temp.jpg")
-        
-    except Exception as e:
-        print(f"❌ Image Download Error: {e}")
+            if r.status_code == 200 and 'image' in r.headers.get('Content-Type', ''):
+                # Agar image sahi mil gayi, toh save karo aur loop se bahar nikal jao
+                with open("reel_temp.jpg", "wb") as f: 
+                    f.write(r.content)
+                img = Image.open("reel_temp.jpg")
+                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+                img.save("reel_temp.jpg")
+                image_downloaded = True
+                print("✅ Image successfully downloaded!")
+                break # Loop khatam
+            else:
+                print(f"⚠️ Attempt {attempt + 1} Failed! Status Code: {r.status_code}. Retrying in 5 seconds...")
+                time.sleep(5) # 5 second ruko aur dobara try karo
+                
+        except Exception as e:
+            print(f"❌ Network Error in Attempt {attempt + 1}: {e}")
+            time.sleep(5)
+
+    # Agar 3 baar try karne ke baad bhi fail ho gaya
+    if not image_downloaded:
+        print("🛑 CRASH PREVENTED: 3 attempts ke baad bhi AI server ne photo nahi di. Exiting safely...")
         return
 
+    # --- BAAKI REEL RENDERING KA CODE SAME HAI ---
     print("🎬 Rendering 15s HD Reel...")
     
     bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
-    
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
     wrapped_topic = textwrap.fill(topic, width=20)
