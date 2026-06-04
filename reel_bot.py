@@ -3,9 +3,8 @@ import os
 import random
 import json
 import time
-import urllib.parse
 import textwrap
-from PIL import Image, ImageDraw  # Naya ImageDraw import kiya hai
+from PIL import Image
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
 
 def get_topic():
@@ -24,7 +23,7 @@ def get_topic():
         return topic
     except Exception as e:
         print(f"Topic Error: {e}")
-        return "Mechanical Keyboard vs Membrane Keyboard"
+        return "Free Fire vs PUBG: Choose Your Path"
 
 def get_random_music():
     music_folder = "music"
@@ -35,76 +34,71 @@ def get_random_music():
     print("⚠️ Music folder ya files nahi mili.")
     return None
 
-# 🔥 NAYA BLUEPRINT: Local Fallback Image Banane Ka Function
-def generate_local_vs_background():
-    print("🎨 AI Server down hai! Local VS Split Background generate kar rahe hain...")
-    # 1080x1080 ka ek naya blank image canvas banaya
-    img = Image.new("RGB", (1080, 1080), color=(0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    
-    # Left Half: Gaming Crimson Red (X: 0 se 540)
-    draw.rectangle([0, 0, 540, 1080], fill=(160, 20, 30))
-    
-    # Right Half: Gaming Deep Blue (X: 540 se 1080)
-    draw.rectangle([540, 0, 1080, 1080], fill=(20, 50, 160))
-    
-    # Center Line: Dono ke beech ek patli black line border ke liye
-    draw.line([(540, 0), (540, 1080)], fill=(0, 0, 0), width=10)
-    
-    img.save("reel_temp.jpg")
+# 🔥 NAYA ENGINE: Hugging Face Stable Diffusion XL
+def generate_ai_image(prompt):
+    hf_token = os.environ.get('HF_TOKEN')
+    if not hf_token:
+        print("❌ ERROR: GitHub Secrets mein HF_TOKEN nahi mila!")
+        return False
+
+    # Industry standard image generation model
+    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    headers = {"Authorization": f"Bearer {hf_token}"}
+    payload = {"inputs": prompt}
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        print(f"Hugging Face API ko request bhej rahe hain (Attempt {attempt + 1}/3)...")
+        try:
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=40)
+            
+            if response.status_code == 200:
+                with open("reel_temp.jpg", "wb") as f:
+                    f.write(response.content)
+                img = Image.open("reel_temp.jpg")
+                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+                img.save("reel_temp.jpg")
+                print("✅ Hugging Face se 8K Image successfully download ho gayi!")
+                return True
+            
+            elif response.status_code == 503:
+                # HF ka server agar thanda pada ho, toh usko warm-up hone mein thoda time lagta hai
+                print("⏳ AI Model load ho raha hai (503). 10 seconds wait kar rahe hain...")
+                time.sleep(10)
+            else:
+                print(f"⚠️ API Error: {response.status_code}. Retrying...")
+                time.sleep(5)
+                
+        except Exception as e:
+            print(f"❌ Network Error: {e}")
+            time.sleep(5)
+            
+    return False
 
 def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
     
-    print(f"🎨 Image Generate ho rahi hai (COMPARISON STYLE): {topic}")
+    print(f"🎨 Image Generate ho rahi hai: {topic}")
     
     visual_styles = [
-        "split-screen comparison layout, two different gaming worlds side by side, 'choose your path' concept, a gamer standing in the middle deciding, vibrant 3D cartoonish style",
-        "interactive social media poll format, horizontal split screen, bright and colorful gaming assets, stylized 3D render like Free Fire posters"
+        "split-screen comparison layout, two different gaming worlds side by side, 'choose your path' concept, vibrant 3D cartoonish style",
+        "interactive social media poll format, horizontal split screen, bright and colorful gaming assets, 3D render"
     ]
     random_style = random.choice(visual_styles)
-    visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
-    safe_prompt = urllib.parse.quote(visual_prompt)
+    visual_prompt = f"{topic}. {random_style}, trending on artstation, masterpiece, 8k resolution"
     
-    image_downloaded = False
-    max_retries = 3
-    
-    for attempt in range(max_retries):
-        seed = int(time.time()) + random.randint(1, 1000)
-        img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
-        
-        print(f"Image API ko request bhej rahe hain (Attempt {attempt + 1}/{max_retries})...")
-        try:
-            r = requests.get(img_url, timeout=20)
-            
-            if r.status_code == 200 and 'image' in r.headers.get('Content-Type', ''):
-                with open("reel_temp.jpg", "wb") as f: 
-                    f.write(r.content)
-                img = Image.open("reel_temp.jpg")
-                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
-                img.save("reel_temp.jpg")
-                image_downloaded = True
-                print("✅ Image successfully downloaded from AI!")
-                break
-            else:
-                print(f"⚠️ Attempt {attempt + 1} Failed! Status Code: {r.status_code}. Retrying...")
-                time.sleep(3)
-                
-        except Exception as e:
-            print(f"❌ Network Error in Attempt {attempt + 1}: {e}")
-            time.sleep(3)
-
-    # 🔥 SMART SWITCH: Agar AI fail ho gaya, toh local function call karo
-    if not image_downloaded:
-        generate_local_vs_background()
+    # AI Photo Function ko call kiya
+    if not generate_ai_image(visual_prompt):
+        print("🛑 UPLOAD CANCELLED: Hugging Face se image nahi ban payi. Bot exit kar raha hai.")
+        return
 
     print("🎬 Rendering 15s HD Reel...")
     
     bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
-    wrapped_topic = textwrap.fill(topic.upper(), width=20) # .upper() lagaya taaki capitalized BOLD dikhe
+    wrapped_topic = textwrap.fill(topic.upper(), width=20)
     topic_clip = TextClip(
         wrapped_topic, 
         fontsize=85, 
