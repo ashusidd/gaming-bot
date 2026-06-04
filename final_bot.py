@@ -21,43 +21,42 @@ def get_live_news():
         print(f"News Fetch Error: {e}")
         return None
 
-# 🔥 NAYA ENGINE: Hugging Face API (For Photos)
 def generate_ai_image(prompt):
     hf_token = os.environ.get('HF_TOKEN')
     if not hf_token:
         print("❌ ERROR: GitHub Secrets mein HF_TOKEN nahi mila!")
         return False
 
-    # Industry standard image generation model
-    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    # 🔥 FIX 1: Super Fast Model
+    API_URL = "https://api-inference.huggingface.co/models/Lykon/dreamshaper-xl-v2-turbo"
     headers = {"Authorization": f"Bearer {hf_token}"}
     payload = {"inputs": prompt}
 
     max_retries = 3
     for attempt in range(max_retries):
-        print(f"Hugging Face API ko request bhej rahe hain (Attempt {attempt + 1}/3)...")
+        print(f"Hugging Face API (DreamShaper) ko request bhej rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            response = requests.post(API_URL, headers=headers, json=payload, timeout=40)
+            # 🔥 FIX 2: Timeout increased to 60s
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
             
             if response.status_code == 200:
                 with open("photo_temp.jpg", "wb") as f:
                     f.write(response.content)
-                # Resize keeping it square just in case
                 img = Image.open("photo_temp.jpg")
                 img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
                 img.save("photo_temp.jpg")
-                print("✅ Hugging Face se 8K Photo successfully download ho gayi!")
+                print("✅ 8K Photo successfully generated!")
                 return True
             
             elif response.status_code == 503:
-                print("⏳ AI Model load ho raha hai (503). 10 seconds wait kar rahe hain...")
-                time.sleep(10)
+                print("⏳ Model load ho raha hai (503). 15 seconds ka solid wait...")
+                time.sleep(15)
             else:
                 print(f"⚠️ API Error: {response.status_code}. Retrying...")
                 time.sleep(5)
                 
         except Exception as e:
-            print(f"❌ Network Error: {e}")
+            print(f"❌ Network/DNS Issue in Attempt {attempt + 1}: {e}. Retrying...")
             time.sleep(5)
             
     return False
@@ -70,13 +69,11 @@ def add_watermark(image_path):
         watermark_text = " Er Ashu Gaming "
         
         try:
-            # Agar Linux runner par font nahi mila, toh default uthayega
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 45)
         except:
             font = ImageFont.load_default()
         
         width, height = img.size
-        # Niche ek dark patti banayenge taaki white text clear dikhe
         draw.rectangle([(0, height - 70), (width, height)], fill=(0, 0, 0, 180))
         draw.text((20, height - 60), watermark_text, fill="white", font=font)
         
@@ -118,12 +115,10 @@ def post_to_facebook():
     caption_prompt = (
         f"Topic: '{chosen_topic}'.\n\n"
         "Act as a funny Indian gaming meme page admin ('Engineers Gamer'). Write a short, 2-line Facebook caption in NATURAL HINGLISH (Hindi language written in English alphabet mixed with English gaming words).\n\n"
-        "EXAMPLES:\n"
-        "- 'Bhai yaar yeh ping issue ne dimaag kharab kar diya hai! Kis kis ke sath aisa hota hai? 😂'\n"
         "RULES:\n"
-        "1. DO NOT use formal or weird translated Hindi. Talk like a normal Indian gamer.\n"
+        "1. DO NOT use formal or weird translated Hindi.\n"
         "2. Keep it very short (Max 2 lines) and end with an engaging question.\n"
-        "3. DO NOT output any extra text, ONLY the caption and 3-4 hashtags."
+        "3. ONLY the caption and 3-4 hashtags."
     )
     
     url_groq = "https://api.groq.com/openai/v1/chat/completions"
@@ -140,18 +135,15 @@ def post_to_facebook():
     visual_styles = ["first-person POV in-game action screenshot", "cinematic movie poster style", "e-sports tournament stage setting"]
     image_prompt = f"{chosen_topic}, {random.choice(visual_styles)}, masterpiece, trending on artstation"
     
-    # 📸 AI Image Generation
     if not generate_ai_image(image_prompt):
-        print("🛑 UPLOAD CANCELLED: Hugging Face se image nahi ban payi. Agli baar try karenge.")
+        print("🛑 UPLOAD CANCELLED: Hugging Face se image nahi ban payi.")
         return
 
-    # 🖋️ Watermark
     watermarked_image = add_watermark("photo_temp.jpg")
     if not watermarked_image:
-        print("🛑 UPLOAD CANCELLED: Watermark lagane mein error aayi.")
+        print("🛑 UPLOAD CANCELLED: Watermark error.")
         return
 
-    # 🚀 Facebook Upload
     page_id = '318640404662743' 
     system_token = os.environ.get('FB_TOKEN')
     
@@ -167,7 +159,6 @@ def post_to_facebook():
         return
 
     url = f"https://graph.facebook.com/{page_id}/photos"
-    
     print("✅ Facebook par photo upload ho rahi hai...")
     payload = {'message': caption, 'access_token': page_token}
     
@@ -181,4 +172,4 @@ def post_to_facebook():
 
 if __name__ == "__main__":
     post_to_facebook()
-    
+            
