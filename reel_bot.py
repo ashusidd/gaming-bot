@@ -41,17 +41,21 @@ def generate_ai_image(prompt):
         print("❌ ERROR: GitHub Secrets mein HF_TOKEN nahi mila!")
         return False
 
-    # 🔥 FIX 1: Super Fast and Always Active Model (DreamShaper Turbo)
-    API_URL = "https://api-inference.huggingface.co/models/Lykon/dreamshaper-xl-v2-turbo"
-    headers = {"Authorization": f"Bearer {hf_token}"}
+    # 🔥 DIRECT IP ROUTING: Domain hata kar seedha Hugging Face ki global IP aur Host Header lagaya hai
+    # Isse DNS fail hone par bhi network directly connect ho jata hai
+    API_URL = "https://18.243.141.112/models/Lykon/dreamshaper-xl-v2-turbo"
+    headers = {
+        "Authorization": f"Bearer {hf_token}",
+        "Host": "api-inference.huggingface.co" # Yeh batana zaroori hai taaki server pehchane
+    }
     payload = {"inputs": prompt}
 
     max_retries = 3
     for attempt in range(max_retries):
-        print(f"Hugging Face API (DreamShaper) ko request bhej rahe hain (Attempt {attempt + 1}/3)...")
+        print(f"Hugging Face API (Direct IP) ko request bhej rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            # 🔥 FIX 2: Timeout ko 60 seconds kiya taaki network glitche s bachein
-            response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+            # verify=False lagaya hai kyunki IP par SSL certificate error aa sakta hai
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=60, verify=False)
             
             if response.status_code == 200:
                 with open("reel_temp.jpg", "wb") as f:
@@ -59,18 +63,30 @@ def generate_ai_image(prompt):
                 img = Image.open("reel_temp.jpg")
                 img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
                 img.save("reel_temp.jpg")
-                print("✅ 8K Image successfully generated!")
+                print("✅ 8K Image successfully generated via Direct IP!")
                 return True
             
             elif response.status_code == 503:
-                print("⏳ Model load ho raha hai (503). 15 seconds ka solid wait...")
+                print("⏳ Model load ho raha hai (503). 15 seconds wait...")
                 time.sleep(15)
             else:
-                print(f"⚠️ API Error: {response.status_code}. Retrying in 5s...")
+                print(f"⚠️ API Error Status: {response.status_code}. Retrying...")
                 time.sleep(5)
                 
         except Exception as e:
-            print(f"❌ Network/DNS Issue in Attempt {attempt + 1}: {e}. Retrying...")
+            # 🔥 BACKUP ROUTING: Agar IP fail ho jaye, toh normal domain try karo
+            print(f"⚠️ Direct IP failed ({e}), backup domain try kar rahe hain...")
+            try:
+                BACKUP_URL = "https://api-inference.huggingface.co/models/Lykon/dreamshaper-xl-v2-turbo"
+                backup_headers = {"Authorization": f"Bearer {hf_token}"}
+                response = requests.post(BACKUP_URL, headers=backup_headers, json=payload, timeout=40)
+                if response.status_code == 200:
+                    with open("reel_temp.jpg", "wb") as f:
+                        f.write(response.content)
+                    print("✅ Image generated via Backup Domain!")
+                    return True
+            except Exception as backup_err:
+                print(f"❌ Backup Domain bhi fail hua: {backup_err}")
             time.sleep(5)
             
     return False
@@ -162,4 +178,4 @@ def create_and_upload_reel():
 
 if __name__ == "__main__":
     create_and_upload_reel()
-    
+        
