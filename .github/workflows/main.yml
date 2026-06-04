@@ -14,7 +14,7 @@ on:
 
 jobs:
   post_content:
-    runs-on: self-hosted  # Yeh aapke local PC ke liye hai
+    runs-on: self-hosted
 
     steps:
     - name: Checkout Repository
@@ -29,11 +29,10 @@ jobs:
         $current_cron = "${{ github.event.schedule }}"
         Write-Host "Current Schedule trigger is: $current_cron"
         
-        # Check agar yeh Reel ka time hai ya manual trigger hai
         if ($current_cron -eq "30 8 * * *" -or $current_cron -eq "30 15 * * *" -or "${{ github.event_name }}" -eq "workflow_dispatch") {
-            Write-Host "🎬 Target Matched: Running REEL Bot..."
+            Write-Host "Running REEL Bot..."
             python reel_bot.py
         } else {
-            Write-Host "📸 Target Matched: Running PHOTO Bot..."
+            Write-Host "Running PHOTO Bot..."
             python final_bot.py
         }
