@@ -15,58 +15,45 @@ def get_live_news():
     except: return None
 
 def generate_pure_ai_image(prompt):
-    realistic_prompt = f"mdjrny-v4 style, {prompt}, realistic gaming setup action screenshot, photorealistic, 4k cinematic lighting, highly detailed"
-    safe_prompt = urllib.parse.quote(realistic_prompt)
-    seed = random.randint(1, 1000000)
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://pollinations.ai/'
-    }
-    
-    url_direct = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}"
-    url_proxy = f"https://wsrv.nl/?url=image.pollinations.ai/prompt/{safe_prompt}%3Fwidth%3D1080%26height%3D1080%26seed%3D{seed}"
-    url_hercai = f"https://hercai.onrender.com/v3/text2image?prompt={safe_prompt}"
+    token = os.environ.get('HF_TOKEN')
+    if not token:
+        print("❌ ERROR: HF_TOKEN GitHub secrets mein nahi mila!")
+        return False
 
-    print("🕵️ Route 1: Fake Browser Headers try kar rahe hain...")
-    try:
-        r1 = requests.get(url_direct, headers=headers, timeout=30)
-        if r1.status_code == 200:
-            with open("photo_temp.jpg", "wb") as f: f.write(r1.content)
-            img = Image.open("photo_temp.jpg").resize((1080, 1080), Image.Resampling.LANCZOS)
-            img.save("photo_temp.jpg")
-            print("✅ Route 1 Successful!")
-            return True
-    except: pass
+    API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
+    headers = {"Authorization": f"Bearer {token}"}
     
-    time.sleep(2)
-    print("🌐 Route 2: Netherlands Proxy se IP Ban bypass kar rahe hain...")
-    try:
-        r2 = requests.get(url_proxy, headers=headers, timeout=30)
-        if r2.status_code == 200:
-            with open("photo_temp.jpg", "wb") as f: f.write(r2.content)
-            img = Image.open("photo_temp.jpg").resize((1080, 1080), Image.Resampling.LANCZOS)
-            img.save("photo_temp.jpg")
-            print("✅ Route 2 Successful!")
-            return True
-    except: pass
+    realistic_prompt = f"masterpiece, highly detailed, {prompt}, realistic gaming setup action screenshot, photorealistic, 4k cinematic lighting"
     
-    time.sleep(2)
-    print("🤖 Route 3: Hercai AI Alternate Engine use kar rahe hain...")
-    try:
-        r3 = requests.get(url_hercai, headers=headers, timeout=30)
-        if r3.status_code == 200:
-            data = r3.json()
-            if "url" in data and data["url"]:
-                img_resp = requests.get(data["url"], headers=headers, timeout=30)
-                if img_resp.status_code == 200:
-                    with open("photo_temp.jpg", "wb") as f: f.write(img_resp.content)
-                    img = Image.open("photo_temp.jpg").resize((1080, 1080), Image.Resampling.LANCZOS)
-                    img.save("photo_temp.jpg")
-                    print("✅ Route 3 Successful!")
-                    return True
-    except: pass
-
+    for attempt in range(5):
+        print(f"🚀 Direct API (Hugging Face) se photo nikal rahe hain (Attempt {attempt + 1}/5)...")
+        try:
+            response = requests.post(API_URL, headers=headers, json={"inputs": realistic_prompt}, timeout=60)
+            
+            if response.status_code == 200:
+                with open("photo_temp.jpg", "wb") as f:
+                    f.write(response.content)
+                
+                img = Image.open("photo_temp.jpg")
+                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+                img.save("photo_temp.jpg")
+                
+                print("✅ Direct API se Ultra-HD AI Photo ban gayi!")
+                return True
+            
+            elif response.status_code == 503:
+                error_data = response.json()
+                wait_time = error_data.get('estimated_time', 20)
+                print(f"⏳ AI Model load ho raha hai. {wait_time} seconds wait kar rahe hain...")
+                time.sleep(wait_time + 2)
+            else:
+                print(f"❌ API Error {response.status_code}: {response.text}")
+                time.sleep(10)
+                
+        except Exception as e:
+            print(f"❌ Connection Error: {e}")
+            time.sleep(10)
+            
     return False
 
 def add_watermark(image_path):
@@ -139,4 +126,3 @@ def post_to_facebook():
 
 if __name__ == "__main__":
     post_to_facebook()
-    
