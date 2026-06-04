@@ -41,19 +41,17 @@ def generate_pure_ai_image(prompt):
 
     client = InferenceClient(provider="hf-inference", token=token)
     
-    # 'mdjrny-v4 style' lagane se openjourney model ekdum cinematic output deta hai
     realistic_prompt = f"mdjrny-v4 style, {prompt}, ultra-realistic 3D gaming render, cinematic lighting, masterpiece, 4k"
     
     max_retries = 3
-    delay = 20 # Shuruwaati break
+    delay = 20
     
     for attempt in range(max_retries):
         print(f"Hugging Face SDK Client se image nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
+            # 🔥 MAGIC FIX: Model ka naam hata diya. SDK auto-route karega working model par.
             image = client.text_to_image(
-                prompt=realistic_prompt,
-                # 🔥 Light aur super fast model jo kam rate-limit hota hai
-                model="prompthero/openjourney"
+                prompt=realistic_prompt
             )
             image.save("reel_temp.jpg")
             
@@ -65,10 +63,11 @@ def generate_pure_ai_image(prompt):
             return True
         except Exception as e:
             print(f"❌ Error on attempt {attempt + 1}: {e}")
-            if "429" in str(e):
-                print(f"⏳ Server busy (429)! {delay} seconds ka smart break le rahe hain...")
+            # 🔥 STRICT FIX: Ab random ID ko nahi, sirf exact rate limit ko pakdega
+            if "429 Too Many Requests" in str(e):
+                print(f"⏳ Server busy! {delay} seconds ka smart break le rahe hain...")
                 time.sleep(delay)
-                delay = delay * 2 # Agli baar delay double ho jayega
+                delay = delay * 2
             else:
                 time.sleep(5)
     return False
