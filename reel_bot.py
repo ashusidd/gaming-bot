@@ -24,7 +24,7 @@ def get_topic():
         return topic
     except Exception as e:
         print(f"Topic Error: {e}")
-        return "Free Fire vs PUBG: Choose Your Path"
+        return "M762 Beryl vs AKM"
 
 def get_random_music():
     music_folder = "music"
@@ -32,110 +32,50 @@ def get_random_music():
         files = [f for f in os.listdir(music_folder) if f.endswith(".mp3")]
         if files:
             return os.path.join(music_folder, random.choice(files))
-    print("⚠️ Music folder ya files nahi mili.")
     return None
 
-def generate_ai_image(prompt):
-    hf_token = os.environ.get('HF_TOKEN')
-    if not hf_token:
-        print("❌ ERROR: GitHub Secrets mein HF_TOKEN nahi mila!")
-        return False
-
-    # 🔥 DIRECT IP ROUTING: Domain hata kar seedha Hugging Face ki global IP aur Host Header lagaya hai
-    # Isse DNS fail hone par bhi network directly connect ho jata hai
-    API_URL = "https://18.243.141.112/models/Lykon/dreamshaper-xl-v2-turbo"
-    headers = {
-        "Authorization": f"Bearer {hf_token}",
-        "Host": "api-inference.huggingface.co" # Yeh batana zaroori hai taaki server pehchane
-    }
-    payload = {"inputs": prompt}
-
+def generate_pure_ai_image(prompt):
+    # 🔥 Pollinations ka Ultra-Stable Flux Engine (No Auth Required, Highly Whitelisted Network)
+    encoded_prompt = urllib.parse.quote(prompt)
+    API_URL = f"https://image.pollinations.ai/p/{encoded_prompt}?width=1080&height=1080&model=flux&enhance=true"
+    
     max_retries = 3
     for attempt in range(max_retries):
-        print(f"Hugging Face API (Direct IP) ko request bhej rahe hain (Attempt {attempt + 1}/3)...")
+        print(f"Pollinations AI (Flux Engine) se image nikal rahe hain (Attempt {attempt + 1}/3)...")
         try:
-            # verify=False lagaya hai kyunki IP par SSL certificate error aa sakta hai
-            response = requests.post(API_URL, headers=headers, json=payload, timeout=60, verify=False)
-            
-            if response.status_code == 200:
+            response = requests.get(API_URL, timeout=40)
+            if response.status_code == 200 and len(response.content) > 5000:
                 with open("reel_temp.jpg", "wb") as f:
                     f.write(response.content)
-                img = Image.open("reel_temp.jpg")
-                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
-                img.save("reel_temp.jpg")
-                print("✅ 8K Image successfully generated via Direct IP!")
+                print("✅ Premium AI Image successfully generated!")
                 return True
-            
-            elif response.status_code == 503:
-                print("⏳ Model load ho raha hai (503). 15 seconds wait...")
-                time.sleep(15)
             else:
-                print(f"⚠️ API Error Status: {response.status_code}. Retrying...")
+                print(f"⚠️ Server Response: {response.status_code}. Retrying in 5s...")
                 time.sleep(5)
-                
         except Exception as e:
-            # 🔥 BACKUP ROUTING: Agar IP fail ho jaye, toh normal domain try karo
-            print(f"⚠️ Direct IP failed ({e}), backup domain try kar rahe hain...")
-            try:
-                BACKUP_URL = "https://api-inference.huggingface.co/models/Lykon/dreamshaper-xl-v2-turbo"
-                backup_headers = {"Authorization": f"Bearer {hf_token}"}
-                response = requests.post(BACKUP_URL, headers=backup_headers, json=payload, timeout=40)
-                if response.status_code == 200:
-                    with open("reel_temp.jpg", "wb") as f:
-                        f.write(response.content)
-                    print("✅ Image generated via Backup Domain!")
-                    return True
-            except Exception as backup_err:
-                print(f"❌ Backup Domain bhi fail hua: {backup_err}")
+            print(f"❌ Network issue on attempt {attempt + 1}: {e}")
             time.sleep(5)
-            
     return False
 
 def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
     
-    print(f"🎨 Image Generate ho rahi hai: {topic}")
+    print(f"🎨 Target Topic: {topic}")
     
-    visual_styles = [
-        "split-screen comparison layout, two different gaming worlds side by side, 'choose your path' concept, vibrant 3D cartoonish style",
-        "interactive social media poll format, horizontal split screen, bright and colorful gaming assets, 3D render"
-    ]
-    random_style = random.choice(visual_styles)
-    visual_prompt = f"{topic}. {random_style}, trending on artstation, masterpiece, 8k resolution"
-    
-    if not generate_ai_image(visual_prompt):
-        print("🛑 UPLOAD CANCELLED: Image nahi ban payi.")
+    # STRICTION: Agar AI image nahi bani, toh seedha cancel, koi fallback nahi!
+    if not generate_pure_ai_image(f"{topic}, realistic 3D gaming concept, 8k resolution, cinematic lighting"):
+        print("🛑 UPLOAD CANCELLED: Pure AI Image nahi ban payi. Strict Rule enforced.")
         return
 
     print("🎬 Rendering 15s HD Reel...")
-    
     bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(15)
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
     wrapped_topic = textwrap.fill(topic.upper(), width=20)
-    topic_clip = TextClip(
-        wrapped_topic, 
-        fontsize=85, 
-        color='white', 
-        font='Arial-Bold', 
-        align='center'
-    ).set_position(('center', 120)).set_duration(15) 
-    
-    vote_clip = TextClip(
-        "COMMENT YOUR VOTE", 
-        fontsize=80, 
-        color='white', 
-        font='Arial-Bold',
-        align='center'
-    ).set_position(('center', 1580)).set_duration(15) 
-    
-    watermark = TextClip(
-        "ER ASHU GAMING", 
-        fontsize=35, 
-        color='gray', 
-        font='Arial-Bold'
-    ).set_position(('center', 1800)).set_duration(15)
+    topic_clip = TextClip(wrapped_topic, fontsize=85, color='white', font='Arial-Bold', align='center').set_position(('center', 120)).set_duration(15) 
+    vote_clip = TextClip("COMMENT YOUR VOTE", fontsize=80, color='white', font='Arial-Bold', align='center').set_position(('center', 1580)).set_duration(15) 
+    watermark = TextClip("ER ASHU GAMING", fontsize=35, color='gray', font='Arial-Bold').set_position(('center', 1800)).set_duration(15)
     
     video = CompositeVideoClip([bg_clip, img_clip, topic_clip, vote_clip, watermark])
 
@@ -149,33 +89,16 @@ def create_and_upload_reel():
     # FACEBOOK UPLOAD
     page_id = '318640404662743'
     system_token = os.environ.get('FB_TOKEN')
-    
-    token_url = f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}"
-    token_response = requests.get(token_url).json()
-    
-    if 'access_token' in token_response:
-        page_token = token_response['access_token']
-    else:
-        print(f"❌ Token Error: {token_response}")
-        return
-
-    url = f"https://graph-video.facebook.com/{page_id}/videos"
-    
     try:
-        with open("final_reel.mp4", 'rb') as video_file:
-            files = {'source': video_file}
-            payload = {
-                'description': caption, 
-                'title': 'Gaming Reels',
-                'access_token': page_token
-            }
-            
+        page_token = requests.get(f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}").json().get('access_token')
+        if page_token:
             print("🚀 Uploading to Facebook...")
-            r = requests.post(url, data=payload, files=files)
-            print(f"Upload Response: {r.json()}")
+            with open("final_reel.mp4", 'rb') as video_file:
+                r = requests.post(f"https://graph-video.facebook.com/{page_id}/videos", data={'description': caption, 'title': 'Gaming Reels', 'access_token': page_token}, files={'source': video_file})
+                print(f"Upload Response: {r.json()}")
     except Exception as e:
         print(f"❌ Upload Error: {e}")
 
 if __name__ == "__main__":
     create_and_upload_reel()
-        
+    
