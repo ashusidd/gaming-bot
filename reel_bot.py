@@ -50,7 +50,8 @@ def generate_pure_ai_image(prompt):
         try:
             image = client.text_to_image(
                 prompt=realistic_prompt,
-                model="Lykon/dreamshaper-xl-v2-turbo"
+                # 🔥 NAYA, 100% SUPPORTED AUR POWERFUL MODEL
+                model="stabilityai/stable-diffusion-xl-base-1.0"
             )
             image.save("reel_temp.jpg")
             
