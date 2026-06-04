@@ -3,8 +3,8 @@ import os
 import random
 import urllib.parse
 from PIL import Image, ImageDraw, ImageFont
-import io
 import time
+import textwrap
 
 def get_live_news():
     print("Middleman (RSS2JSON) ke zariye Reddit ki Live News nikal rahe hain...")
@@ -15,20 +15,83 @@ def get_live_news():
         r = requests.get(api_url)
         if r.status_code == 200:
             data = r.json()
-            latest_news = data['items'][0]['title']
-            return latest_news
-        else:
-            return None
+            return data['items'][0]['title']
+        return None
     except Exception as e:
         print(f"News Fetch Error: {e}")
         return None
 
-def get_ai_data():
+# 🔥 NAYA ENGINE: Hugging Face API (For Photos)
+def generate_ai_image(prompt):
+    hf_token = os.environ.get('HF_TOKEN')
+    if not hf_token:
+        print("❌ ERROR: GitHub Secrets mein HF_TOKEN nahi mila!")
+        return False
+
+    # Industry standard image generation model
+    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    headers = {"Authorization": f"Bearer {hf_token}"}
+    payload = {"inputs": prompt}
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        print(f"Hugging Face API ko request bhej rahe hain (Attempt {attempt + 1}/3)...")
+        try:
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=40)
+            
+            if response.status_code == 200:
+                with open("photo_temp.jpg", "wb") as f:
+                    f.write(response.content)
+                # Resize keeping it square just in case
+                img = Image.open("photo_temp.jpg")
+                img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+                img.save("photo_temp.jpg")
+                print("✅ Hugging Face se 8K Photo successfully download ho gayi!")
+                return True
+            
+            elif response.status_code == 503:
+                print("⏳ AI Model load ho raha hai (503). 10 seconds wait kar rahe hain...")
+                time.sleep(10)
+            else:
+                print(f"⚠️ API Error: {response.status_code}. Retrying...")
+                time.sleep(5)
+                
+        except Exception as e:
+            print(f"❌ Network Error: {e}")
+            time.sleep(5)
+            
+    return False
+
+def add_watermark(image_path):
+    print("Photo par watermark laga rahe hain...")
+    try:
+        img = Image.open(image_path)
+        draw = ImageDraw.Draw(img)
+        watermark_text = " Er Ashu Gaming "
+        
+        try:
+            # Agar Linux runner par font nahi mila, toh default uthayega
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 45)
+        except:
+            font = ImageFont.load_default()
+        
+        width, height = img.size
+        # Niche ek dark patti banayenge taaki white text clear dikhe
+        draw.rectangle([(0, height - 70), (width, height)], fill=(0, 0, 0, 180))
+        draw.text((20, height - 60), watermark_text, fill="white", font=font)
+        
+        watermarked_path = "watermarked_photo.jpg"
+        img.save(watermarked_path)
+        return watermarked_path
+    except Exception as e:
+        print(f"❌ Watermark Error: {e}")
+        return None
+
+def post_to_facebook():
     api_key = os.environ.get('GROQ_API_KEY')
-    
     if not api_key:
-        print("Error: API Key missing!")
-        return "Bhaiyo, taiyaar ho jao nayi gaming stream ke liye! 🎮🔥", None
+        print("Error: GROQ_API_KEY missing!")
+        return
 
     live_news = get_live_news()
     choice = random.choices(['news', 'topic'], weights=[25, 75], k=1)[0]
@@ -40,54 +103,14 @@ def get_ai_data():
         topics = [
             "BGMI random teammates doing stupid things",
             "Landing at Pochinki and getting no gun in BGMI",
-            "The fear of the Red Zone in BGMI",
-            "Finding a flare gun but teammates steal the loot",
-            "Getting killed by a snake (camper) in the last circle of Sanhok",
             "The feeling of getting a Chicken Dinner after a 10-match losing streak",
             "When your Ping goes to 999ms during a 1v4 clutch",
-            "Reviving a teammate in the blue zone",
-            "Looting a drop but getting sniped instantly",
-            "Rushing a squad house with just a shotgun",
             "Trying to hit a perfect one-tap headshot in Free Fire",
-            "When someone destroys your Gloo Wall in Free Fire",
-            "DJ Alok vs Chrono funny debates",
-            "Landing at Peak in Bermuda map and dying in 10 seconds",
             "Rank push struggles in Free Fire Heroic tier",
-            "When your teammate loots your bounty token",
-            "Playing clash squad randoms and teammates go offline",
-            "The stress of 1v1 custom room matches in FF",
-            "Missing the airdrop by 1 inch in FF",
-            "Using a sniper but missing all shots",
-            "Opening a 110+ OVR pack in FC Mobile and getting a useless player",
             "When script goes against you in FC Mobile H2H match",
-            "Scoring a last-minute 90th-minute header in FC Mobile",
-            "Saving millions of coins to buy your favorite striker",
-            "When the opponent celebrates after scoring a tap-in goal",
-            "Upgrading a player in FC Mobile and running out of fodder",
-            "The lag when you are about to shoot a penalty in H2H",
-            "Building a full icon squad but still losing to a silver team",
-            "The pain of Market tax in FC Mobile",
-            "Waiting for Thursday reset for new events",
             "Waiting for GTA 6 to release so we can finally rest",
-            "GTA 6 trailer leaks funny reaction",
             "Minecraft gamers building a dirt house on day 1",
-            "Valorant players getting toxic over voice chat",
-            "Missing easy shots with an Operator in Valorant",
-            "Buying a gaming PC but only playing low graphics games",
-            "RGB lights make my PC 100% faster joke",
-            "GTA 5 driving mechanics vs real life",
-            "When a console player tries mouse and keyboard for the first time",
-            "Skyrim mods crashing the game funny moment",
-            "Having a B.Tech semester exam tomorrow but doing a 3 AM rank push",
-            "When hostel Wi-Fi disconnects right in the middle of a clutch",
-            "Engineering students fixing coding bugs vs fixing ping issues",
-            "Telling parents 'This game cannot be paused'",
-            "Playing games on a laptop that sounds like a jet engine",
-            "When you use your engineering brain to calculate grenade trajectory but still die",
-            "Submitting assignment at 11:59 PM and opening BGMI at 12:00 AM",
-            "Trying to balance CGPA and K/D Ratio",
-            "When your non-gamer friend tries to play a racing game",
-            "The ultimate dream of buying a high-end gaming setup after getting a job"
+            "When hostel Wi-Fi disconnects right in the middle of a clutch"
         ]
         chosen_topic = random.choice(topics)
         print(f"😂 Aaj ka Topic: {chosen_topic}")
@@ -95,102 +118,67 @@ def get_ai_data():
     caption_prompt = (
         f"Topic: '{chosen_topic}'.\n\n"
         "Act as a funny Indian gaming meme page admin ('Engineers Gamer'). Write a short, 2-line Facebook caption in NATURAL HINGLISH (Hindi language written in English alphabet mixed with English gaming words).\n\n"
-        "EXAMPLES OF GOOD HINGLISH:\n"
+        "EXAMPLES:\n"
         "- 'Bhai yaar yeh ping issue ne dimaag kharab kar diya hai! Kis kis ke sath aisa hota hai? 😂'\n"
-        "- 'Relatable pro max! Jab random teammate loot chura le toh kaisa feel hota hai bhaiyo? 💀👇'\n"
-        "- 'Exam kal hai aur hum yahan rank push kar rahe hain. 🥲 Comment your rank!'\n\n"
-        "CRITICAL RULES:\n"
+        "RULES:\n"
         "1. DO NOT use formal or weird translated Hindi. Talk like a normal Indian gamer.\n"
-        "2. Keep it very short (Max 2 lines).\n"
-        "3. End with an engaging question asking people to comment (e.g., 'Sach batao kis kis ke sath hua hai? 👇').\n"
-        "4. DO NOT output any extra text, headings, or notes. ONLY the caption and 3-4 hashtags."
+        "2. Keep it very short (Max 2 lines) and end with an engaging question.\n"
+        "3. DO NOT output any extra text, ONLY the caption and 3-4 hashtags."
     )
     
     url_groq = "https://api.groq.com/openai/v1/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    
     data = {"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": caption_prompt}], "temperature": 0.7}
     
     print("Groq AI se Natural Hinglish caption banwa rahe hain...")
-    caption = requests.post(url_groq, headers=headers, json=data).json()['choices'][0]['message']['content']
-    
-    print("AI Image ka URL naye Dynamic Styles ke sath bana rahe hain...")
-    unique_seed = int(time.time()) + random.randint(1, 100000)
-    
-    visual_styles = [
-        "first-person POV in-game action screenshot, vibrant lighting, highly detailed",
-        "cinematic movie poster style, dramatic epic low angle, Unreal Engine 5",
-        "e-sports tournament stage setting, neon RGB lights, massive crowd background, 8k",
-        "dark and gritty cinematic render, intense shadows, photorealistic",
-        "vibrant concept art style, highly detailed gaming environment, dynamic composition"
-    ]
-    random_style = random.choice(visual_styles)
-    
-    image_prompt = f"{chosen_topic}, {random_style}, masterpiece, trending on artstation"
-    safe_prompt = urllib.parse.quote(image_prompt)
-    
-    image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true&seed={unique_seed}"
-    
-    return caption, image_url
-
-def add_watermark(image_url):
-    print("Image download karke check kar rahe hain ki AI ne photo di hai ya fail ho gaya...")
     try:
-        r = requests.get(image_url, timeout=15)
-        
-        # 🔥 FIX 1: The Safety Check (Maha-Important!)
-        # Check kar rahe hain ki kya response mein 'image' word hai. Agar nahi, toh reject kardo.
-        if r.status_code != 200 or 'image' not in r.headers.get('Content-Type', ''):
-            print(f"❌ AI Image filter block ho gayi ya server down hai! Status Code: {r.status_code}")
-            return None
-            
-        img_data = r.content
-        img = Image.open(io.BytesIO(img_data))
-        
-        draw = ImageDraw.Draw(img)
-        watermark_text = " Er Ashu Gaming "
-        
-        try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 45)
-        except:
-            font = ImageFont.load_default()
-        
-        width, height = img.size
-        draw.rectangle([(0, height - 70), (width, height)], fill=(0, 0, 0, 180))
-        draw.text((20, height - 60), watermark_text, fill="white", font=font)
-        
-        img_path = "watermarked_image.jpg"
-        img.save(img_path)
-        return img_path
+        caption = requests.post(url_groq, headers=headers, json=data).json()['choices'][0]['message']['content']
     except Exception as e:
-        print(f"❌ Watermark ya Image Error: {e}")
-        return None
+        print(f"❌ Caption Error: {e}")
+        return
 
-def post_to_facebook():
+    visual_styles = ["first-person POV in-game action screenshot", "cinematic movie poster style", "e-sports tournament stage setting"]
+    image_prompt = f"{chosen_topic}, {random.choice(visual_styles)}, masterpiece, trending on artstation"
+    
+    # 📸 AI Image Generation
+    if not generate_ai_image(image_prompt):
+        print("🛑 UPLOAD CANCELLED: Hugging Face se image nahi ban payi. Agli baar try karenge.")
+        return
+
+    # 🖋️ Watermark
+    watermarked_image = add_watermark("photo_temp.jpg")
+    if not watermarked_image:
+        print("🛑 UPLOAD CANCELLED: Watermark lagane mein error aayi.")
+        return
+
+    # 🚀 Facebook Upload
     page_id = '318640404662743' 
     system_token = os.environ.get('FB_TOKEN')
     
     token_url = f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}"
-    page_token = requests.get(token_url).json().get('access_token')
+    try:
+        page_token = requests.get(token_url).json().get('access_token')
+    except Exception as e:
+        print(f"❌ Token fetch error: {e}")
+        return
     
     if not page_token:
         print("Token Error!")
         return
 
-    caption, image_url = get_ai_data()
-    local_image_path = add_watermark(image_url)
-    
     url = f"https://graph.facebook.com/{page_id}/photos"
     
-    # 🔥 FIX 2: Graceful Exit (Facebook ko galat data nahi jayega)
-    if local_image_path:
-        print("✅ Facebook par Watermark wali photo upload ho rahi hai...")
-        payload = {'message': caption, 'access_token': page_token}
-        files = {'source': open(local_image_path, 'rb')}
-        r = requests.post(url, data=payload, files=files)
-        print(f"Facebook Response: {r.json()}")
-    else:
-        print("🛑 UPLOAD CANCELLED: Image sahi nahi aayi thi, isliye Facebook ko API error dene se bacha liya gaya. Agli cron job naya topic uthayegi.")
+    print("✅ Facebook par photo upload ho rahi hai...")
+    payload = {'message': caption, 'access_token': page_token}
+    
+    try:
+        with open(watermarked_image, 'rb') as img_file:
+            files = {'source': img_file}
+            r = requests.post(url, data=payload, files=files)
+            print(f"Upload Response: {r.json()}")
+    except Exception as e:
+        print(f"❌ Upload Error: {e}")
 
 if __name__ == "__main__":
     post_to_facebook()
+    
