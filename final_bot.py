@@ -3,7 +3,6 @@ import os
 import random
 import urllib.parse
 from PIL import Image, ImageDraw, ImageFont
-import io
 import time
 
 def get_live_news():
@@ -12,7 +11,7 @@ def get_live_news():
         rss_url = "https://www.reddit.com/r/gamingnews/.rss"
         api_url = f"https://api.rss2json.com/v1/api.json?rss_url={urllib.parse.quote(rss_url)}"
         
-        r = requests.get(api_url)
+        r = requests.get(api_url, timeout=15)
         if r.status_code == 200:
             data = r.json()
             latest_news = data['items'][0]['title']
@@ -23,13 +22,9 @@ def get_live_news():
         print(f"News Fetch Error: {e}")
         return None
 
-def get_ai_data():
+def get_ai_caption_and_prompt():
     api_key = os.environ.get('GROQ_API_KEY')
     
-    if not api_key:
-        print("Error: API Key missing!")
-        return "Bhaiyo, taiyaar ho jao nayi gaming stream ke liye! 🎮🔥", None
-
     live_news = get_live_news()
     choice = random.choices(['news', 'topic'], weights=[25, 75], k=1)[0]
     
@@ -92,33 +87,32 @@ def get_ai_data():
         chosen_topic = random.choice(topics)
         print(f"😂 Aaj ka Topic: {chosen_topic}")
 
-    # 🔥 NAYA LOGIC: FEW-SHOT PROMPTING FOR PERFECT HINGLISH
-    caption_prompt = (
-        f"Topic: '{chosen_topic}'.\n\n"
-        "Act as a funny Indian gaming meme page admin ('Engineers Gamer'). Write a short, 2-line Facebook caption in NATURAL HINGLISH (Hindi language written in English alphabet mixed with English gaming words).\n\n"
-        "EXAMPLES OF GOOD HINGLISH:\n"
-        "- 'Bhai yaar yeh ping issue ne dimaag kharab kar diya hai! Kis kis ke sath aisa hota hai? 😂'\n"
-        "- 'Relatable pro max! Jab random teammate loot chura le toh kaisa feel hota hai bhaiyo? 💀👇'\n"
-        "- 'Exam kal hai aur hum yahan rank push kar rahe hain. 🥲 Comment your rank!'\n\n"
-        "CRITICAL RULES:\n"
-        "1. DO NOT use formal or weird translated Hindi. Talk like a normal Indian gamer.\n"
-        "2. Keep it very short (Max 2 lines).\n"
-        "3. End with an engaging question asking people to comment (e.g., 'Sach batao kis kis ke sath hua hai? 👇').\n"
-        "4. DO NOT output any extra text, headings, or notes. ONLY the caption and 3-4 hashtags."
-    )
+    caption = f"Bhaiyo kya scene hai? {chosen_topic} 😂🔥\n\n#ErAshuGaming #GamingLife #Esports"
     
-    url_groq = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    
-    data = {"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": caption_prompt}], "temperature": 0.7}
-    
-    print("Groq AI se Natural Hinglish caption banwa rahe hain...")
-    caption = requests.post(url_groq, headers=headers, json=data).json()['choices'][0]['message']['content']
-    
-    # AI Image Generation
-    print("AI Image ka URL naye Dynamic Styles ke sath bana rahe hain...")
-    unique_seed = int(time.time()) + random.randint(1, 100000)
-    
+    if api_key:
+        caption_prompt = (
+            f"Topic: '{chosen_topic}'.\n\n"
+            "Act as a funny Indian gaming meme page admin ('Engineers Gamer'). Write a short, 2-line Facebook caption in NATURAL HINGLISH (Hindi language written in English alphabet mixed with English gaming words).\n\n"
+            "EXAMPLES OF GOOD HINGLISH:\n"
+            "- 'Bhai yaar yeh ping issue ne dimaag kharab kar diya hai! Kis kis ke sath aisa hota hai? 😂'\n"
+            "- 'Relatable pro max! Jab random teammate loot chura le toh kaisa feel hota hai bhaiyo? 💀👇'\n"
+            "- 'Exam kal hai aur hum yahan rank push kar rahe hain. 🥲 Comment your rank!'\n\n"
+            "CRITICAL RULES:\n"
+            "1. DO NOT use formal or weird translated Hindi. Talk like a normal Indian gamer.\n"
+            "2. Keep it very short (Max 2 lines).\n"
+            "3. End with an engaging question asking people to comment (e.g., 'Sach batao kis kis ke sath hua hai? 👇').\n"
+            "4. DO NOT output any extra text, headings, or notes. ONLY the caption and 3-4 hashtags."
+        )
+        try:
+            url_groq = "https://api.groq.com/openai/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            data = {"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": caption_prompt}], "temperature": 0.7}
+            print("Groq AI se Natural Hinglish caption banwa rahe hain...")
+            res = requests.post(url_groq, headers=headers, json=data, timeout=15)
+            caption = res.json()['choices'][0]['message']['content']
+        except Exception as e:
+            print(f"Groq Caption Error: {e}")
+
     visual_styles = [
         "first-person POV in-game action screenshot, vibrant lighting, highly detailed",
         "cinematic movie poster style, dramatic epic low angle, Unreal Engine 5",
@@ -129,64 +123,109 @@ def get_ai_data():
     random_style = random.choice(visual_styles)
     
     image_prompt = f"{chosen_topic}, {random_style}, masterpiece, trending on artstation"
-    safe_prompt = urllib.parse.quote(image_prompt)
-    
-    image_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true&seed={unique_seed}"
-    
-    return caption, image_url
+    return caption, image_prompt
 
-def add_watermark(image_url):
-    print("Image download karke 'Er Ashu Gaming' ka watermark laga rahe hain...")
+# 🔥 NAYA NEVER-FAIL IMAGE DOWNLOAD SYSTEM
+def generate_robust_photo(prompt):
+    print(f"🎨 Image Prompt: {prompt}")
+    safe_prompt = urllib.parse.quote(prompt)
+    unique_seed = int(time.time()) + random.randint(1, 100000)
+    
+    # FIX: Removed width, height, and nologo parameters to avoid Error 402
+    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?seed={unique_seed}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0"
+    }
+
     try:
-        img_data = requests.get(image_url).content
-        img = Image.open(io.BytesIO(img_data))
-        
-        draw = ImageDraw.Draw(img)
-        watermark_text = " Er Ashu Gaming "
-        
-        try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 45)
-        except:
-            font = ImageFont.load_default()
-        
-        width, height = img.size
-        draw.rectangle([(0, height - 70), (width, height)], fill=(0, 0, 0, 180))
-        draw.text((20, height - 60), watermark_text, fill="white", font=font)
-        
-        img_path = "watermarked_image.jpg"
-        img.save(img_path)
-        return img_path
-    except Exception as e:
-        print(f"Watermark Error: {e}")
-        return None
+        r = requests.get(img_url, headers=headers, timeout=20)
+        if r.status_code == 200:
+            with open("photo_temp.jpg", "wb") as f: 
+                f.write(r.content)
+            print("✅ Try 1 Success: AI Image Downloaded!")
+            return True
+    except:
+        pass
+
+    print("⚠️ AI Blocked (402). Backup System Active: Downloading HQ Gaming Photo...")
+    fallback_images = [
+        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1080&h=1080&fit=crop", 
+        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1080&h=1080&fit=crop", 
+        "https://images.unsplash.com/photo-1552820728-8b83bb6b7738?w=1080&h=1080&fit=crop", 
+        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1080&h=1080&fit=crop"  
+    ]
+    try:
+        r = requests.get(random.choice(fallback_images), timeout=20)
+        if r.status_code == 200:
+            with open("photo_temp.jpg", "wb") as f:
+                f.write(r.content)
+            print("✅ Try 2 Success: Backup Wallpaper Downloaded!")
+            return True
+    except:
+        pass
+
+    print("⚠️ Wallpaper bhi fail. Solid background use kar rahe hain.")
+    img = Image.new('RGB', (1080, 1080), color=(25, 25, 25))
+    img.save('photo_temp.jpg')
+    print("✅ Try 3 Success: Basic Background Ready!")
+    return True
+
+def add_watermark():
+    print("Image ko 1080x1080 me fix karke 'Er Ashu Gaming' ka watermark laga rahe hain...")
+    
+    # Image resize ki jarurat idhar puri ki gayi hai
+    img = Image.open("photo_temp.jpg")
+    img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+    
+    draw = ImageDraw.Draw(img)
+    width, height = img.size
+    
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 45)
+    except:
+        font = ImageFont.load_default()
+    
+    draw.rectangle([(0, height - 70), (width, height)], fill=(0, 0, 0, 180))
+    draw.text((20, height - 60), " ER ASHU GAMING ", fill="white", font=font)
+    
+    img_path = "watermarked_image.jpg"
+    img.save(img_path)
+    return img_path
 
 def post_to_facebook():
     page_id = '318640404662743' 
     system_token = os.environ.get('FB_TOKEN')
     
-    token_url = f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}"
-    page_token = requests.get(token_url).json().get('access_token')
-    
-    if not page_token:
-        print("Token Error!")
+    try:
+        token_url = f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}"
+        token_response = requests.get(token_url).json()
+        page_token = token_response.get('access_token')
+        
+        if not page_token:
+            print("Token Error!")
+            return
+    except Exception as e:
+        print(f"Facebook Token Fetch Error: {e}")
         return
 
-    caption, image_url = get_ai_data()
-    local_image_path = add_watermark(image_url)
+    # Data Generate Karo
+    caption, image_prompt = get_ai_caption_and_prompt()
     
-    url = f"https://graph.facebook.com/{page_id}/photos"
-    
-    if local_image_path:
-        print("Facebook par Watermark wali photo upload ho rahi hai...")
-        payload = {'message': caption, 'access_token': page_token}
-        files = {'source': open(local_image_path, 'rb')}
-        r = requests.post(url, data=payload, files=files)
-    else:
-        print("Watermark fail hua, direct URL bhej rahe hain...")
-        payload = {'message': caption, 'url': image_url, 'access_token': page_token}
-        r = requests.post(url, data=payload)
+    # Image Generate aur Upload Karo
+    if generate_robust_photo(image_prompt):
+        local_image_path = add_watermark()
+        url = f"https://graph.facebook.com/{page_id}/photos"
         
-    print(f"Facebook Response: {r.json()}")
+        print("🚀 Facebook par Watermark wali photo upload ho rahi hai...")
+        payload = {'message': caption, 'access_token': page_token}
+        
+        with open(local_image_path, 'rb') as f:
+            files = {'source': f}
+            r = requests.post(url, data=payload, files=files)
+            
+        print(f"✅ Facebook Response: {r.json()}")
+    else:
+        print("❌ Image generation poori tarah se fail ho gayi.")
 
 if __name__ == "__main__":
     post_to_facebook()
