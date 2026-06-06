@@ -2,41 +2,61 @@ name: Gaming Bot Auto Post
 
 on:
   schedule:
-    - cron: '30 4 * * *'  # Photo
-    - cron: '30 7 * * *'  # Photo
-    - cron: '30 8 * * *'  # Reel
-    - cron: '30 11 * * *' # Photo
-    - cron: '30 15 * * *' # Reel
-    - cron: '0 15 * * *'  # Photo
-    - cron: '30 16 * * *' # Photo
-  workflow_dispatch: 
+    # 5 Photo Posts (Memes/News)
+    - cron: '0 4 * * *'   # 09:30 IST
+    - cron: '0 8 * * *'   # 13:30 IST
+    - cron: '0 11 * * *'  # 16:30 IST
+    - cron: '0 13 * * *'  # 18:30 IST
+    - cron: '0 17 * * *'  # 22:30 IST
+    
+    # 2 Reel Posts (2 PM & 9 PM IST)
+    - cron: '30 8 * * *'  # 14:00 IST
+    - cron: '30 15 * * *' # 21:00 IST
+    
+  workflow_dispatch:
 
 jobs:
-  post_content:
-    runs-on: ubuntu-latest  
-
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+      
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Saara git history fetch karega taaki rebase fail na ho
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      - name: Install dependencies
+        run: |
+          pip install requests Pillow moviepy==1.0.3
+          sudo apt-get update && sudo apt-get install -y ffmpeg imagemagick
+          sudo sed -i '/pattern="@\*/d' /etc/ImageMagick-6/policy.xml
 
-    - name: Install Required Libraries
-      run: |
-        pip install requests pillow moviepy
+      # 🔥 SMART ROUTING STEP: Purane python dispatcher.py ki jagah ab yeh chalega
+      - name: Run Bot Based on Schedule
+        env:
+          FB_TOKEN: ${{ secrets.FB_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          if [ "${{ github.event.schedule }}" = "30 8 * * *" ] || [ "${{ github.event.schedule }}" = "30 15 * * *" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "🎬 Target Matched: Running REEL Bot..."
+            python reel_bot.py
+          else
+            echo "📸 Target Matched: Running PHOTO Bot..."
+            python final_bot.py
+          fi
 
-    - name: Run Bot
-      env:
-        FB_TOKEN: ${{ secrets.FB_TOKEN }}
-        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      run: |
-        if [ "${{ github.event.schedule }}" = "30 8 * * *" ] || [ "${{ github.event.schedule }}" = "30 15 * * *" ]; then
-          echo "🎬 Running REEL Bot..."
-          python reel_bot.py
-        else
-          echo "📸 Running PHOTO Bot..."
-          python final_bot.py
-        fi
+      - name: Commit and Push Updated JSON
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add topics.json
+          git commit -m "Auto-update used topics [skip ci]" || echo "No changes to commit"
+          git pull --rebase origin main
+          git push origin main
