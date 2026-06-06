@@ -58,5 +58,6 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add topics.json
           git commit -m "Auto-update used topics [skip ci]" || echo "No changes to commit"
-          git pull --rebase origin main
+          # 🔥 FIX: Agar takkar (conflict) ho, toh bot ke json ko bachao aur aage badho (--no-rebase -X ours)
+          git pull origin main --no-rebase -X ours
           git push origin main
