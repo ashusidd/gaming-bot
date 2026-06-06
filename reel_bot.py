@@ -32,39 +32,55 @@ def get_random_music():
         files = [f for f in os.listdir(music_folder) if f.endswith(".mp3")]
         if files:
             return os.path.join(music_folder, random.choice(files))
-    print("⚠️ Music folder ya files nahi mili.")
     return None
+
+# 🔥 MASTERSTROKE: Groq AI se Copyright naam hatwana
+def get_safe_visual_prompt(topic):
+    api_key = os.environ.get('GROQ_API_KEY')
+    fallback_prompt = f"split screen gaming comparison, two warriors fighting, bright colors, 8k resolution"
+    
+    if not api_key: 
+        return fallback_prompt
+
+    try:
+        prompt_instruction = (
+            f"Create a short, vivid visual description for this gaming topic: '{topic}'. "
+            "CRITICAL RULE: DO NOT use any copyrighted game names (like PUBG, Valorant, Free Fire) "
+            "or specific character names (like Jett, Reyna, Alok). Use generic terms like 'wind ninja', "
+            "'cyber soldier', 'vampire warrior', etc. Keep it under 15 words."
+        )
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        data = {"model": "llama-3.1-8b-instant", "messages": [{"role": "user", "content": prompt_instruction}]}
+        res = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=data, timeout=10)
+        
+        clean_desc = res.json()['choices'][0]['message']['content'].strip()
+        clean_desc = clean_desc.replace('"', '').replace("'", "") # Remove any quotes
+        return f"split screen comparison, {clean_desc}, epic gaming 3d render, 8k resolution"
+    except Exception as e:
+        print(f"Groq Sanitizer Error: {e}")
+        return fallback_prompt
 
 def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
     
-    print(f"🎨 Image Generate ho rahi hai (COMPARISON STYLE): {topic}")
+    print(f"🎨 Target Topic: {topic}")
+    
+    # 🕵️ Yahan filter ho raha hai prompt
+    visual_prompt = get_safe_visual_prompt(topic)
+    print(f"🕵️ Copyright Bypass Prompt: {visual_prompt}")
+    
+    safe_prompt = urllib.parse.quote(visual_prompt)
     seed = int(time.time()) + random.randint(1, 1000)
     
-    visual_styles = [
-        "split-screen comparison layout, two different gaming worlds side by side, 'choose your path' concept, a gamer standing in the middle deciding, vibrant 3D cartoonish style",
-        "interactive social media poll format, horizontal split screen, bright and colorful gaming assets, stylized 3D render like Free Fire posters",
-        "epic versus battle concept art, red vs blue neon lighting, divided screen, highly detailed 3D animated character style"
-    ]
-    random_style = random.choice(visual_styles)
+    # Model explicitly 'flux' set kiya hai jo free aur fast hai
+    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?seed={seed}&model=flux"
     
-    visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
-    safe_prompt = urllib.parse.quote(visual_prompt)
-    
-    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?seed={seed}"
-    
-    # 🔥 THE ULTIMATE FIX: Browser ke 'Headers' daal diye. 
-    # Ab Pollinations API ko lagega ki request kisi Google Chrome browser se aayi hai, kisi bot se nahi.
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    
+
     try:
-        # Request bhejte waqt ye naye headers use kiye hain
         response = requests.get(img_url, headers=headers, timeout=60)
         
         if response.status_code == 200:
@@ -74,19 +90,18 @@ def create_and_upload_reel():
             img = Image.open("reel_temp.jpg")
             img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
             img.save("reel_temp.jpg")
-            print("✅ Image successfully downloaded (Browser Bypass lag gaya)!")
+            print("✅ Image successfully downloaded (Bypassed Copyright Filter)!")
         else:
             print(f"❌ Server ne Image nahi bheji. Status Code: {response.status_code}")
             return
             
     except Exception as e:
-        print(f"❌ Image Download/Processing Error: {e}")
+        print(f"❌ Image Download Error: {e}")
         return
 
     print("🎬 Rendering 15s HD Reel...")
     
     bg_clip = ColorClip(size=(1080, 1920), color=(15, 15, 15)).set_duration(15)
-    
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
     wrapped_topic = textwrap.fill(topic.upper(), width=20)
@@ -129,25 +144,20 @@ def create_and_upload_reel():
     page_id = '318640404662743'
     system_token = os.environ.get('FB_TOKEN')
     
-    token_url = f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}"
-    token_response = requests.get(token_url).json()
-    
-    if 'access_token' in token_response:
-        page_token = token_response['access_token']
-    else:
-        print(f"❌ Token Error: {token_response}")
-        return
-
-    url = f"https://graph-video.facebook.com/{page_id}/videos"
-    
     try:
+        token_url = f"https://graph.facebook.com/{page_id}?fields=access_token&access_token={system_token}"
+        token_response = requests.get(token_url).json()
+        
+        if 'access_token' in token_response:
+            page_token = token_response['access_token']
+        else:
+            print(f"❌ Token Error: {token_response}")
+            return
+
+        url = f"https://graph-video.facebook.com/{page_id}/videos"
         with open("final_reel.mp4", 'rb') as video_file:
             files = {'source': video_file}
-            payload = {
-                'description': caption, 
-                'title': 'Gaming Reels',
-                'access_token': page_token
-            }
+            payload = {'description': caption, 'title': 'Gaming Reels', 'access_token': page_token}
             
             print("🚀 Uploading to Facebook...")
             r = requests.post(url, data=payload, files=files)
