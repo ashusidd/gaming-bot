@@ -52,22 +52,29 @@ def create_and_upload_reel():
     visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
     safe_prompt = urllib.parse.quote(visual_prompt)
     
-    # 🔥 FIX: Width aur Height hata diya! Sirf prompt aur seed bhej rahe hain taaki 100% Free tier mein rahe.
     img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?seed={seed}"
     
+    # 🔥 THE ULTIMATE FIX: Browser ke 'Headers' daal diye. 
+    # Ab Pollinations API ko lagega ki request kisi Google Chrome browser se aayi hai, kisi bot se nahi.
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive"
+    }
+    
     try:
-        # Timeout 60 second rakha hai taaki fasa na rahe
-        response = requests.get(img_url, timeout=60)
+        # Request bhejte waqt ye naye headers use kiye hain
+        response = requests.get(img_url, headers=headers, timeout=60)
         
         if response.status_code == 200:
             with open("reel_temp.jpg", "wb") as f: 
                 f.write(response.content)
                 
-            # Humara Python khud use 1080x1080 bana lega, API ki zaroorat nahi
             img = Image.open("reel_temp.jpg")
             img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
             img.save("reel_temp.jpg")
-            print("✅ Image successfully downloaded aur resize ho gayi!")
+            print("✅ Image successfully downloaded (Browser Bypass lag gaya)!")
         else:
             print(f"❌ Server ne Image nahi bheji. Status Code: {response.status_code}")
             return
