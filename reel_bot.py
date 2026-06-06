@@ -52,20 +52,22 @@ def create_and_upload_reel():
     visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
     safe_prompt = urllib.parse.quote(visual_prompt)
     
-    # 🔥 FIX: 'nologo=true' hata diya gaya hai taaki 402 Error (Paid Feature block) na aaye.
-    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}"
+    # 🔥 FIX: Width aur Height hata diya! Sirf prompt aur seed bhej rahe hain taaki 100% Free tier mein rahe.
+    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?seed={seed}"
     
-    # 🔥 FIXED SECTION: Image downloading and validation
     try:
+        # Timeout 60 second rakha hai taaki fasa na rahe
         response = requests.get(img_url, timeout=60)
         
         if response.status_code == 200:
             with open("reel_temp.jpg", "wb") as f: 
                 f.write(response.content)
                 
+            # Humara Python khud use 1080x1080 bana lega, API ki zaroorat nahi
             img = Image.open("reel_temp.jpg")
             img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
             img.save("reel_temp.jpg")
+            print("✅ Image successfully downloaded aur resize ho gayi!")
         else:
             print(f"❌ Server ne Image nahi bheji. Status Code: {response.status_code}")
             return
