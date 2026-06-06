@@ -1,19 +1,15 @@
-name: Gaming Bot Auto Post
+name: Reels Bot Auto Post
 
 on:
   schedule:
-    # 5 Photo Posts (Memes/News)
-    - cron: '0 4 * * *'   # 09:30 IST
-    - cron: '0 8 * * *'   # 13:30 IST
-    - cron: '0 11 * * *'  # 16:30 IST
-    - cron: '0 13 * * *'  # 18:30 IST
-    - cron: '0 17 * * *'  # 22:30 IST
+    # 5 Reel Posts Daily (Har 3 ghante ka gap taaki 402 Error na aaye)
+    - cron: '0 4 * * *'   # 09:30 AM IST
+    - cron: '0 7 * * *'   # 12:30 PM IST
+    - cron: '0 10 * * *'  # 03:30 PM IST
+    - cron: '0 13 * * *'  # 06:30 PM IST
+    - cron: '0 16 * * *'  # 09:30 PM IST
     
-    # 2 Reel Posts (2 PM & 9 PM IST)
-    - cron: '30 8 * * *'  # 14:00 IST
-    - cron: '30 15 * * *' # 21:00 IST
-    
-  workflow_dispatch:
+  workflow_dispatch:      # Manual button run karne ke liye
 
 jobs:
   build:
@@ -25,7 +21,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Saara git history fetch karega taaki rebase fail na ho
+          fetch-depth: 0 
         
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,19 +34,14 @@ jobs:
           sudo apt-get update && sudo apt-get install -y ffmpeg imagemagick
           sudo sed -i '/pattern="@\*/d' /etc/ImageMagick-6/policy.xml
 
-      # 🔥 SMART ROUTING STEP: Purane python dispatcher.py ki jagah ab yeh chalega
-      - name: Run Bot Based on Schedule
+      # 🔥 FIX: Ab koi smart routing nahi. Sirf aur sirf Reels Bot chalega!
+      - name: Run Reels Bot
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
-          if [ "${{ github.event.schedule }}" = "30 8 * * *" ] || [ "${{ github.event.schedule }}" = "30 15 * * *" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "🎬 Target Matched: Running REEL Bot..."
-            python reel_bot.py
-          else
-            echo "📸 Target Matched: Running PHOTO Bot..."
-            python final_bot.py
-          fi
+          echo "🎬 Running Daily REEL Bot..."
+          python reel_bot.py
 
       - name: Commit and Push Updated JSON
         run: |
@@ -58,6 +49,5 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add topics.json
           git commit -m "Auto-update used topics [skip ci]" || echo "No changes to commit"
-          # 🔥 FIX: Agar takkar (conflict) ho, toh bot ke json ko bachao aur aage badho (--no-rebase -X ours)
           git pull origin main --no-rebase -X ours
           git push origin main
