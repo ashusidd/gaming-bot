@@ -129,22 +129,22 @@ def create_and_upload_reel():
     try:
         topic_clip = TextClip(
             wrapped_topic, 
-            fontsize=90,          
+            fontsize=100,          
             color='white', 
             font='Arial-Bold', 
             align='center',
-            stroke_color='black',
+            stroke_color='white',
             stroke_width=6        
         ).set_position(('center', 380)).set_duration(15) 
         
         vote_clip = TextClip(
             "👇 COMMENT YOUR VOTE! 👇", 
-            fontsize=70, 
+            fontsize=90, 
             color='#FFD700', 
             font='Arial-Bold',
             align='center',
-            stroke_color='black',
-            stroke_width=4
+            stroke_color='red',
+            stroke_width=6
         ).set_position(('center', 1450)).set_duration(15) 
         
         watermark = TextClip(
