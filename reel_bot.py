@@ -2,12 +2,13 @@ import requests
 import os
 import random
 import json
-import time
+import time # Ye rukne ke kaam aayega
 import urllib.parse
 import textwrap
 from PIL import Image
-from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip, ColorClip
+from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip
 
+# 1. Topic wala function (Same hai)
 def get_topic():
     try:
         with open("topics.json", "r+") as f:
@@ -26,6 +27,7 @@ def get_topic():
         print(f"Topic Error: {e}")
         return "Free Fire vs PUBG: Choose Your Path"
 
+# 2. Music wala function (Same hai)
 def get_random_music():
     music_folder = "music"
     if os.path.exists(music_folder):
@@ -34,6 +36,7 @@ def get_random_music():
             return os.path.join(music_folder, random.choice(files))
     return None
 
+# 3. Prompt Generator (Isme 402 error fix kiya)
 def get_safe_visual_prompt(topic):
     api_key = os.environ.get('GROQ_API_KEY')
     fallback_prompt = f"split screen gaming comparison, two warriors fighting, bright colors, 8k resolution"
@@ -42,6 +45,7 @@ def get_safe_visual_prompt(topic):
         return fallback_prompt
 
     try:
+        time.sleep(5) # API ko hit karne se pehle 5 second ka aaram diya (Spam prevention)
         prompt_instruction = (
             f"Create a short, vivid visual description for this gaming topic: '{topic}'. "
             "CRITICAL RULE: DO NOT use any copyrighted game names (like PUBG, Valorant, Free Fire) "
@@ -58,11 +62,16 @@ def get_safe_visual_prompt(topic):
     except Exception as e:
         return fallback_prompt
 
+# 4. Background Image (Borders aur 402 dono yahan fix kiye)
 def get_background_image(safe_prompt):
-    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}"
+    # FIXED: Ab height 1920 aur width 1080 kar di hai (Full Screen 9:16)
+    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1920"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0"
     }
+    
+    time.sleep(10) # Pollinations API hit karne se pehle 10 second rukenge (Fixes 402 Error)
+    
     try:
         response = requests.get(img_url, headers=headers, timeout=20)
         if response.status_code == 200:
@@ -74,11 +83,12 @@ def get_background_image(safe_prompt):
         pass
 
     print("⚠️ AI Blocked (402). Backup System Active: Downloading HQ Gaming Background...")
+    # FIXED: Fallback images ko bhi vertical (1080x1920) size mein kar diya
     fallback_images = [
-        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1080&h=1080&fit=crop", 
-        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1080&h=1080&fit=crop", 
-        "https://images.unsplash.com/photo-1552820728-8b83bb6b7738?w=1080&h=1080&fit=crop", 
-        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1080&h=1080&fit=crop"  
+        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1080&h=1920&fit=crop", 
+        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1080&h=1920&fit=crop", 
+        "https://images.unsplash.com/photo-1552820728-8b83bb6b7738?w=1080&h=1920&fit=crop", 
+        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1080&h=1920&fit=crop"  
     ]
     try:
         r = requests.get(random.choice(fallback_images), timeout=20)
@@ -91,10 +101,11 @@ def get_background_image(safe_prompt):
         pass
 
     print("⚠️ Wallpaper bhi fail. Solid background use kar rahe hain.")
-    img = Image.new('RGB', (1080, 1080), color=(25, 25, 25))
+    img = Image.new('RGB', (1080, 1920), color=(25, 25, 25))
     img.save('reel_temp.jpg')
     print("✅ Try 3 Success: Basic Background Ready!")
 
+# 5. Video Banane ka Logic
 def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
@@ -106,28 +117,27 @@ def create_and_upload_reel():
     get_background_image(safe_prompt)
     
     img = Image.open("reel_temp.jpg")
-    img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+    # FIXED: Ab image ko crop/resize karke proper 1080x1920 kiya hai, no borders!
+    img = img.resize((1080, 1920), Image.Resampling.LANCZOS)
     img.save("reel_temp.jpg")
 
     print("🎬 Rendering 15s HD Reel...")
     
-    bg_clip = ColorClip(size=(1080, 1920), color=(15, 15, 15)).set_duration(15)
+    # Ab bg_clip (kaala background) ki zaroorat nahi hai, kyu ki main image hi full screen hai
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
-    wrapped_topic = textwrap.fill(topic.upper(), width=18) # Width kam ki taaki text jyada failay na
+    wrapped_topic = textwrap.fill(topic.upper(), width=18) 
     
-    # 🔥 FIX 1: TOPIC TEXT (Mota kiya aur niche laya)
     topic_clip = TextClip(
         wrapped_topic, 
-        fontsize=90,          # Size bada diya
+        fontsize=90,          
         color='white', 
         font='Arial-Bold', 
         align='center',
         stroke_color='black',
-        stroke_width=6        # Double bold kar diya
-    ).set_position(('center', 380)).set_duration(15) # Position 150 se 380 kar di
+        stroke_width=6        
+    ).set_position(('center', 380)).set_duration(15) 
     
-    # 🔥 FIX 2: VOTE TEXT (Upar khiskaya)
     vote_clip = TextClip(
         "👇 COMMENT YOUR VOTE! 👇", 
         fontsize=70, 
@@ -136,7 +146,7 @@ def create_and_upload_reel():
         align='center',
         stroke_color='black',
         stroke_width=4
-    ).set_position(('center', 1450)).set_duration(15) # Position 1550 se 1450 kar di
+    ).set_position(('center', 1450)).set_duration(15) 
     
     watermark = TextClip(
         "ER ASHU GAMING", 
@@ -145,7 +155,8 @@ def create_and_upload_reel():
         font='Arial-Bold'
     ).set_position(('center', 1750)).set_duration(15)
     
-    video = CompositeVideoClip([bg_clip, img_clip, topic_clip, vote_clip, watermark])
+    # FIXED: bg_clip yahan se hata diya gaya hai
+    video = CompositeVideoClip([img_clip, topic_clip, vote_clip, watermark])
 
     music_file = get_random_music()
     if music_file:
