@@ -52,33 +52,33 @@ def create_and_upload_reel():
     visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
     safe_prompt = urllib.parse.quote(visual_prompt)
     
-    # 🔥 FIX 1: AI ko wapas 1080x1080 (Square) Image banane ko bola taaki zoom na ho
     img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
     
+    # 🔥 FIXED SECTION: Image downloading and validation
     try:
-        img_data = requests.get(img_url).content
-        with open("reel_temp.jpg", "wb") as f: 
-            f.write(img_data)
-            
-        # Image ko strictly 1080x1080 fix kar rahe hain
-        img = Image.open("reel_temp.jpg")
-        img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
-        img.save("reel_temp.jpg")
+        response = requests.get(img_url, timeout=60)
         
+        if response.status_code == 200:
+            with open("reel_temp.jpg", "wb") as f: 
+                f.write(response.content)
+                
+            img = Image.open("reel_temp.jpg")
+            img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+            img.save("reel_temp.jpg")
+        else:
+            print(f"❌ Server ne Image nahi bheji. Status Code: {response.status_code}")
+            return
+            
     except Exception as e:
-        print(f"❌ Image Error: {e}")
+        print(f"❌ Image Download/Processing Error: {e}")
         return
 
     print("🎬 Rendering 15s HD Reel...")
     
-    # 🔥 FIX 2: Dark Background Layout banaya (Meme Style)
     bg_clip = ColorClip(size=(1080, 1920), color=(15, 15, 15)).set_duration(15)
     
-    # Square image ko background ke exact center mein set kiya
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
-    # 🔥 FIX 3: TEXT BOLD & UPPERCASE
-    # Topic ko CAPITAL LETTERS mein convert kiya (.upper()) taaki text mota lage
     wrapped_topic = textwrap.fill(topic.upper(), width=20)
     topic_clip = TextClip(
         wrapped_topic, 
@@ -90,7 +90,6 @@ def create_and_upload_reel():
         stroke_width=3
     ).set_position(('center', 150)).set_duration(15)
     
-    # BOTTOM TEXT
     vote_clip = TextClip(
         "👇 COMMENT YOUR VOTE! 👇", 
         fontsize=70, 
@@ -101,15 +100,13 @@ def create_and_upload_reel():
         stroke_width=3
     ).set_position(('center', 1550)).set_duration(15)
     
-    # WATERMARK (Ekdum niche)
     watermark = TextClip(
         "ER ASHU GAMING", 
         fontsize=45, 
-        color='gray',  # Thoda subtle rakha hai taaki main text highlight ho
+        color='gray', 
         font='Arial-Bold'
     ).set_position(('center', 1750)).set_duration(15)
     
-    # Sabko background ke upar laga diya
     video = CompositeVideoClip([bg_clip, img_clip, topic_clip, vote_clip, watermark])
 
     music_file = get_random_music()
@@ -119,7 +116,6 @@ def create_and_upload_reel():
 
     video.write_videofile("final_reel.mp4", fps=24, codec='libx264', audio_codec='aac')
 
-    # FACEBOOK UPLOAD
     page_id = '318640404662743'
     system_token = os.environ.get('FB_TOKEN')
     
