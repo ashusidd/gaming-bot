@@ -52,7 +52,8 @@ def create_and_upload_reel():
     visual_prompt = f"Topic: {topic}. {random_style}, trending on facebook, bright colors, 8k resolution"
     safe_prompt = urllib.parse.quote(visual_prompt)
     
-    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}&nologo=true"
+    # 🔥 FIX: 'nologo=true' hata diya gaya hai taaki 402 Error (Paid Feature block) na aaye.
+    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&seed={seed}"
     
     # 🔥 FIXED SECTION: Image downloading and validation
     try:
