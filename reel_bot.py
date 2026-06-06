@@ -5,7 +5,7 @@ import json
 import time 
 import urllib.parse
 import textwrap
-from PIL import Image, ImageOps # ImageOps add kiya taaki photo stretch na ho
+from PIL import Image, ImageOps 
 from moviepy.editor import ImageClip, TextClip, CompositeVideoClip, AudioFileClip
 
 # 1. Topic wala function
@@ -36,7 +36,7 @@ def get_random_music():
             return os.path.join(music_folder, random.choice(files))
     return None
 
-# 3. Prompt Generator (API Spam Prevention added)
+# 3. Prompt Generator
 def get_safe_visual_prompt(topic):
     api_key = os.environ.get('GROQ_API_KEY')
     fallback_prompt = f"split screen gaming comparison, two warriors fighting, bright colors, 8k resolution"
@@ -62,7 +62,7 @@ def get_safe_visual_prompt(topic):
     except Exception as e:
         return fallback_prompt
 
-# 4. Background Image Downloader
+# 4. Background Image Downloader (FIXED: Ab unlimited fresh images aayengi)
 def get_background_image(safe_prompt):
     img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1920"
     headers = {
@@ -81,14 +81,14 @@ def get_background_image(safe_prompt):
     except:
         pass
 
-    print("⚠️ AI Blocked (402). Backup System Active: Downloading HQ Gaming Background...")
-    fallback_images = [
-        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1080&h=1920&fit=crop", 
-        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1080&h=1920&fit=crop", 
-        "https://images.unsplash.com/photo-1552820728-8b83bb6b7738?w=1080&h=1920&fit=crop"  
-    ]
+    print("⚠️ AI Blocked (402). Backup System Active: Downloading Unlimited Gaming Background...")
+    
+    # --- YAHAN MAIN FIX HAI ---
+    random_id = random.randint(1, 99999)
+    dynamic_fallback_url = f"https://loremflickr.com/1080/1920/gaming,cyberpunk?lock={random_id}"
+    
     try:
-        r = requests.get(random.choice(fallback_images), timeout=20)
+        r = requests.get(dynamic_fallback_url, timeout=20)
         if r.status_code == 200:
             with open("reel_temp.jpg", "wb") as f:
                 f.write(r.content)
@@ -113,9 +113,7 @@ def create_and_upload_reel():
     
     get_background_image(safe_prompt)
     
-    # --- YAHAN FIX KIYA HAI ---
     img = Image.open("reel_temp.jpg")
-    # ImageOps.fit photo ko bina kheenche, center se crop karke 1080x1920 bana dega
     img = ImageOps.fit(img, (1080, 1920), Image.Resampling.LANCZOS)
     img.save("reel_temp.jpg")
 
@@ -125,7 +123,6 @@ def create_and_upload_reel():
     
     wrapped_topic = textwrap.fill(topic.upper(), width=18) 
     
-    # TextClip ko chalne ke liye system mein 'ImageMagick' install hona chahiye
     try:
         topic_clip = TextClip(
             wrapped_topic, 
@@ -157,7 +154,6 @@ def create_and_upload_reel():
         video = CompositeVideoClip([img_clip, topic_clip, vote_clip, watermark])
     except Exception as text_error:
         print(f"⚠️ Text rendering fail (Shayad ImageMagick install nahi hai): {text_error}")
-        # Agar TextClip fail hota hai toh bina text ke video banayega taaki code na ruke
         video = CompositeVideoClip([img_clip])
 
     music_file = get_random_music()
@@ -165,10 +161,8 @@ def create_and_upload_reel():
         audio = AudioFileClip(music_file).subclip(0, 15)
         video = video.set_audio(audio)
 
-    # Video Save karna
     video.write_videofile("final_reel.mp4", fps=24, codec='libx264', audio_codec='aac')
 
-    # Facebook Upload Logic
     page_id = '318640404662743'
     system_token = os.environ.get('FB_TOKEN')
     
