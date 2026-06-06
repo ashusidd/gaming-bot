@@ -58,9 +58,7 @@ def get_safe_visual_prompt(topic):
     except Exception as e:
         return fallback_prompt
 
-# 🔥 NAYA NEVER-FAIL BACKUP SYSTEM
 def get_background_image(safe_prompt):
-    # Try 1: Pollinations AI
     img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0"
@@ -75,13 +73,12 @@ def get_background_image(safe_prompt):
     except:
         pass
 
-    # Try 2: Premium Gaming Wallpapers (Agar AI 402 Error de de)
     print("⚠️ AI Blocked (402). Backup System Active: Downloading HQ Gaming Background...")
     fallback_images = [
-        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1080&h=1080&fit=crop", # PC Setup
-        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1080&h=1080&fit=crop", # Neon
-        "https://images.unsplash.com/photo-1552820728-8b83bb6b7738?w=1080&h=1080&fit=crop", # Esports
-        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1080&h=1080&fit=crop"  # Dark Keyboard
+        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1080&h=1080&fit=crop", 
+        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1080&h=1080&fit=crop", 
+        "https://images.unsplash.com/photo-1552820728-8b83bb6b7738?w=1080&h=1080&fit=crop", 
+        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1080&h=1080&fit=crop"  
     ]
     try:
         r = requests.get(random.choice(fallback_images), timeout=20)
@@ -93,7 +90,6 @@ def get_background_image(safe_prompt):
     except:
         pass
 
-    # Try 3: Solid Dark Color (Ultimate Failsafe)
     print("⚠️ Wallpaper bhi fail. Solid background use kar rahe hain.")
     img = Image.new('RGB', (1080, 1080), color=(25, 25, 25))
     img.save('reel_temp.jpg')
@@ -107,10 +103,8 @@ def create_and_upload_reel():
     visual_prompt = get_safe_visual_prompt(topic)
     safe_prompt = urllib.parse.quote(visual_prompt)
     
-    # Ye function guarantee karega ki photo milegi hi milegi
     get_background_image(safe_prompt)
     
-    # Photo ko exact size mein fix kar rahe hain
     img = Image.open("reel_temp.jpg")
     img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
     img.save("reel_temp.jpg")
@@ -120,17 +114,20 @@ def create_and_upload_reel():
     bg_clip = ColorClip(size=(1080, 1920), color=(15, 15, 15)).set_duration(15)
     img_clip = ImageClip("reel_temp.jpg").set_position('center').set_duration(15)
     
-    wrapped_topic = textwrap.fill(topic.upper(), width=20)
+    wrapped_topic = textwrap.fill(topic.upper(), width=18) # Width kam ki taaki text jyada failay na
+    
+    # 🔥 FIX 1: TOPIC TEXT (Mota kiya aur niche laya)
     topic_clip = TextClip(
         wrapped_topic, 
-        fontsize=75,
+        fontsize=90,          # Size bada diya
         color='white', 
         font='Arial-Bold', 
         align='center',
         stroke_color='black',
-        stroke_width=3
-    ).set_position(('center', 150)).set_duration(15)
+        stroke_width=6        # Double bold kar diya
+    ).set_position(('center', 380)).set_duration(15) # Position 150 se 380 kar di
     
+    # 🔥 FIX 2: VOTE TEXT (Upar khiskaya)
     vote_clip = TextClip(
         "👇 COMMENT YOUR VOTE! 👇", 
         fontsize=70, 
@@ -138,8 +135,8 @@ def create_and_upload_reel():
         font='Arial-Bold',
         align='center',
         stroke_color='black',
-        stroke_width=3
-    ).set_position(('center', 1550)).set_duration(15)
+        stroke_width=4
+    ).set_position(('center', 1450)).set_duration(15) # Position 1550 se 1450 kar di
     
     watermark = TextClip(
         "ER ASHU GAMING", 
