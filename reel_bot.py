@@ -34,7 +34,6 @@ def get_random_music():
             return os.path.join(music_folder, random.choice(files))
     return None
 
-# 🔥 MASTERSTROKE: Groq AI se Copyright naam hatwana
 def get_safe_visual_prompt(topic):
     api_key = os.environ.get('GROQ_API_KEY')
     fallback_prompt = f"split screen gaming comparison, two warriors fighting, bright colors, 8k resolution"
@@ -46,7 +45,7 @@ def get_safe_visual_prompt(topic):
         prompt_instruction = (
             f"Create a short, vivid visual description for this gaming topic: '{topic}'. "
             "CRITICAL RULE: DO NOT use any copyrighted game names (like PUBG, Valorant, Free Fire) "
-            "or specific character names (like Jett, Reyna, Alok). Use generic terms like 'wind ninja', "
+            "or specific character names. Use generic terms like 'wind ninja', "
             "'cyber soldier', 'vampire warrior', etc. Keep it under 15 words."
         )
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
@@ -54,50 +53,67 @@ def get_safe_visual_prompt(topic):
         res = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=data, timeout=10)
         
         clean_desc = res.json()['choices'][0]['message']['content'].strip()
-        clean_desc = clean_desc.replace('"', '').replace("'", "") # Remove any quotes
+        clean_desc = clean_desc.replace('"', '').replace("'", "") 
         return f"split screen comparison, {clean_desc}, epic gaming 3d render, 8k resolution"
     except Exception as e:
-        print(f"Groq Sanitizer Error: {e}")
         return fallback_prompt
+
+# 🔥 NAYA NEVER-FAIL BACKUP SYSTEM
+def get_background_image(safe_prompt):
+    # Try 1: Pollinations AI
+    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0"
+    }
+    try:
+        response = requests.get(img_url, headers=headers, timeout=20)
+        if response.status_code == 200:
+            with open("reel_temp.jpg", "wb") as f:
+                f.write(response.content)
+            print("✅ Try 1 Success: AI Image Downloaded!")
+            return
+    except:
+        pass
+
+    # Try 2: Premium Gaming Wallpapers (Agar AI 402 Error de de)
+    print("⚠️ AI Blocked (402). Backup System Active: Downloading HQ Gaming Background...")
+    fallback_images = [
+        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1080&h=1080&fit=crop", # PC Setup
+        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1080&h=1080&fit=crop", # Neon
+        "https://images.unsplash.com/photo-1552820728-8b83bb6b7738?w=1080&h=1080&fit=crop", # Esports
+        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1080&h=1080&fit=crop"  # Dark Keyboard
+    ]
+    try:
+        r = requests.get(random.choice(fallback_images), timeout=20)
+        if r.status_code == 200:
+            with open("reel_temp.jpg", "wb") as f:
+                f.write(r.content)
+            print("✅ Try 2 Success: Backup Wallpaper Downloaded!")
+            return
+    except:
+        pass
+
+    # Try 3: Solid Dark Color (Ultimate Failsafe)
+    print("⚠️ Wallpaper bhi fail. Solid background use kar rahe hain.")
+    img = Image.new('RGB', (1080, 1080), color=(25, 25, 25))
+    img.save('reel_temp.jpg')
+    print("✅ Try 3 Success: Basic Background Ready!")
 
 def create_and_upload_reel():
     topic = get_topic()
     caption = f"POV: {topic} 💀😂\n\nYour Vote? 👇\n#EngineersGamer #GamingLife #Esports"
     
     print(f"🎨 Target Topic: {topic}")
-    
-    # 🕵️ Yahan filter ho raha hai prompt
     visual_prompt = get_safe_visual_prompt(topic)
-    print(f"🕵️ Copyright Bypass Prompt: {visual_prompt}")
-    
     safe_prompt = urllib.parse.quote(visual_prompt)
-    seed = int(time.time()) + random.randint(1, 1000)
     
-    # Model explicitly 'flux' set kiya hai jo free aur fast hai
-    img_url = f"https://image.pollinations.ai/prompt/{safe_prompt}?seed={seed}&model=flux"
+    # Ye function guarantee karega ki photo milegi hi milegi
+    get_background_image(safe_prompt)
     
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-
-    try:
-        response = requests.get(img_url, headers=headers, timeout=60)
-        
-        if response.status_code == 200:
-            with open("reel_temp.jpg", "wb") as f: 
-                f.write(response.content)
-                
-            img = Image.open("reel_temp.jpg")
-            img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
-            img.save("reel_temp.jpg")
-            print("✅ Image successfully downloaded (Bypassed Copyright Filter)!")
-        else:
-            print(f"❌ Server ne Image nahi bheji. Status Code: {response.status_code}")
-            return
-            
-    except Exception as e:
-        print(f"❌ Image Download Error: {e}")
-        return
+    # Photo ko exact size mein fix kar rahe hain
+    img = Image.open("reel_temp.jpg")
+    img = img.resize((1080, 1080), Image.Resampling.LANCZOS)
+    img.save("reel_temp.jpg")
 
     print("🎬 Rendering 15s HD Reel...")
     
