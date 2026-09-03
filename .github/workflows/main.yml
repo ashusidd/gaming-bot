@@ -41,7 +41,7 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           echo "🎬 Running Daily REEL Bot..."
-          python reel_bot.py
+          python reel_b
 
       - name: Commit and Push Updated JSON
         run: |
